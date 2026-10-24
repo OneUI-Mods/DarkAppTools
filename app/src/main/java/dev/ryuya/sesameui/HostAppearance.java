@@ -18,6 +18,7 @@ final class HostAppearance {
   private boolean dark;
   private int failures;
   private final String version;
+  private CrashGuard guard;
 
   HostAppearance(Context context) throws Exception {
     this.context = context;
@@ -38,7 +39,7 @@ final class HostAppearance {
       report("unsupported");
       return;
     }
-    CrashGuard guard = new CrashGuard(context, reset);
+    guard = new CrashGuard(context, reset);
     if (!guard.allowed()) {
       report("blocked");
       return;
@@ -100,6 +101,7 @@ final class HostAppearance {
   void style(View view) {
     if (!dark) return;
     try {
+      guard.arm();
       nativeViews.tree(view);
       failures = 0;
     } catch (Throwable failure) {
