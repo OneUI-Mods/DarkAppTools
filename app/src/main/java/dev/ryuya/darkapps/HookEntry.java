@@ -87,7 +87,7 @@ public final class HookEntry extends XposedModule {
           chain -> {
             Object result = chain.proceed();
             View view = (View) chain.getThisObject();
-            if (appearance != null && appearance.nativeViews.profileContent(view))
+            if (appearance != null && appearance.nativeViews.attachedContent(view))
               appearance.style(view);
             return result;
           });
