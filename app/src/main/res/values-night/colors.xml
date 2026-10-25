@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <color name="panel_primary">#80D4D7</color>
-  <color name="panel_on_primary">#003739</color>
-  <color name="panel_primary_container">#005054</color>
-  <color name="panel_on_primary_container">#A5F0F0</color>
+    <color name="panel_primary">#80D4D7</color>
+    <color name="panel_on_primary">#003739</color>
+    <color name="panel_primary_container">#005054</color>
+    <color name="panel_on_primary_container">#A5F0F0</color>
 </resources>

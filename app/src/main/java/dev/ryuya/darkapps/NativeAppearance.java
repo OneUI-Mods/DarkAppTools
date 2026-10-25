@@ -69,6 +69,13 @@ final class NativeAppearance {
   private boolean brightAccent(View view) {
     // Dark text on a yellow call-to-action must remain readable; photographs are not sampled.
     for (int depth = 0; view != null && depth < 5; depth++) {
+      var tint = view.getBackgroundTintList();
+      if (tint != null) {
+        int color = tint.getColorForState(view.getDrawableState(), tint.getDefaultColor());
+        if ((color >>> 24) > 230)
+          return !DarkPalette.neutral(color)
+              && androidx.core.graphics.ColorUtils.calculateLuminance(color) > 0.5;
+      }
       Drawable d = view.getBackground();
       Integer color =
           d instanceof ColorDrawable c

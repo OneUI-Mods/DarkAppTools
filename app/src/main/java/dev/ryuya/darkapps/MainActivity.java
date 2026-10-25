@@ -133,8 +133,8 @@ public final class MainActivity extends AppCompatActivity {
     section.status = text(R.string.status_waiting, false);
     section.status.setPadding(0, dp(12), 0, dp(12));
     state.addView(section.status);
-    MaterialButton open = button(R.string.open_sesame);
-    open.setText(getString(R.string.open_sesame, getString(app.title)));
+    MaterialButton open = button(R.string.open_target);
+    open.setText(getString(R.string.open_target, getString(app.title)));
     open.setOnClickListener(
         v -> {
           Intent intent = getPackageManager().getLaunchIntentForPackage(app.packageName);
@@ -179,15 +179,19 @@ public final class MainActivity extends AppCompatActivity {
             prefs.getBoolean("enabled", true), prefs.getString("mode", ThemeChoice.SYSTEM), night);
     section.preview.setCardBackgroundColor(dark ? DarkPalette.BACKGROUND : 0xfffafafa);
     section.previewBody.removeAllViews();
-    MaterialTextView title = text(R.string.preview_name, true);
+    MaterialTextView title =
+        text(app == SupportedApp.POVO ? R.string.povo_preview_name : R.string.preview_name, true);
     title.setTextColor(dark ? DarkPalette.TEXT : 0xff172327);
     section.previewBody.addView(title);
-    MaterialTextView subtitle = text(R.string.preview_detail, false);
+    MaterialTextView subtitle =
+        text(
+            app == SupportedApp.POVO ? R.string.povo_preview_detail : R.string.preview_detail,
+            false);
     subtitle.setTextColor(dark ? DarkPalette.SECONDARY : 0xff5f6c72);
     subtitle.setPadding(0, dp(8), 0, dp(16));
     section.previewBody.addView(subtitle);
     View line = new View(this);
-    line.setBackgroundColor(0xff28aeb1);
+    line.setBackgroundColor(app == SupportedApp.POVO ? 0xffffe600 : 0xff28aeb1);
     section.previewBody.addView(line, new LinearLayout.LayoutParams(dp(36), dp(4)));
   }
 
