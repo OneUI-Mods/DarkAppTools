@@ -27,6 +27,7 @@ public final class MainActivity extends AppCompatActivity {
 
   public void onCreate(Bundle saved) {
     super.onCreate(saved);
+    ConfigurationAccess.grant(this);
     WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
     LinearLayout root = vertical();
     setContentView(root);

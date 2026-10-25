@@ -2,6 +2,7 @@ package dev.ryuya.sesameui;
 
 import android.app.*;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -27,14 +28,7 @@ public final class HookEntry extends XposedModule {
             Context context = (Context) chain.getArg(0);
             if (ConfigProvider.TARGET.equals(context.getPackageName())
                 && ConfigProvider.TARGET.equals(Application.getProcessName())) {
-              try {
-                appearance = new HostAppearance(context);
-              } catch (Exception failure) {
-                log(
-                    6,
-                    "SesameUITools",
-                    "Appearance setup unavailable: " + failure.getClass().getSimpleName());
-              }
+              initialize(context);
             }
             return result;
           });
@@ -43,6 +37,7 @@ public final class HookEntry extends XposedModule {
               "callActivityOnCreate", Activity.class, Bundle.class),
           chain -> {
             Activity activity = (Activity) chain.getArg(0);
+            if (appearance == null) initialize(activity);
             if (appearance != null) appearance.prepare(activity);
             Object result = chain.proceed();
             if (appearance != null) appearance.window(activity.getWindow());
@@ -52,7 +47,9 @@ public final class HookEntry extends XposedModule {
           Instrumentation.class.getDeclaredMethod("callActivityOnResume", Activity.class),
           chain -> {
             Object result = chain.proceed();
-            if (appearance != null) appearance.window(((Activity) chain.getArg(0)).getWindow());
+            Activity activity = (Activity) chain.getArg(0);
+            if (appearance == null) initialize(activity);
+            if (appearance != null) appearance.window(activity.getWindow());
             return result;
           });
       intercept(
@@ -85,6 +82,28 @@ public final class HookEntry extends XposedModule {
           6,
           "SesameUITools",
           "Platform contract unavailable: " + unsupported.getClass().getSimpleName());
+    }
+  }
+
+  private void initialize(Context context) {
+    if (appearance != null || !ConfigProvider.TARGET.equals(context.getPackageName())) return;
+    try {
+      appearance = new HostAppearance(context);
+    } catch (Exception unavailable) {
+      Intent request =
+          new Intent()
+              .setComponent(
+                  new android.content.ComponentName(
+                      BuildConfig.APPLICATION_ID,
+                      BuildConfig.APPLICATION_ID + ".ConfigurationAccessReceiver"));
+      context.sendBroadcast(
+          request,
+          null,
+          android.app.BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle());
+      log(
+          5,
+          "SesameUITools",
+          "Configuration access requested: " + unavailable.getClass().getSimpleName());
     }
   }
 

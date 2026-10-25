@@ -7,7 +7,7 @@
 - 動作対象の契約: versionName `3.0.266` / versionCode `906`
 - compile / target SDK 37、min SDK 36、libxposed API 102
 
-Application.attachの後に公開ContentProviderから配色設定だけを読みます。Activity生成前に、対象APK内のAppCompatダークオーバーレイとAndroidのダークオーバーレイを重ねます。コンテンツ、入力、クリックリスナー、レイアウト寸法は変更しません。
+Application.attachの後に公開ContentProviderから配色設定だけを読みます。元のセサミは拡張アプリをqueriesに宣言していないため、設定画面の起動・端末起動・更新時にセサミへURI読み取り権限を付与し、providerの可視性を確保します。対象UIDを確認した明示的なブロードキャスト要求でも権限を再付与できます。Activity生成前に、対象APK内のAppCompatダークオーバーレイとAndroidのダークオーバーレイを重ねます。コンテンツ、入力、クリックリスナー、レイアウト寸法は変更しません。
 
 NativeAppearanceはレイアウト更新時と文字色設定時に、背景と文字のニュートラルカラーを役割別に変換します。色付きインジケーターは維持し、画像ピクセルを変換しません。ColorStateListは元の状態指定を保持し、変換キャッシュに上限を設けます。画像はXMLの単色ベクターUIアイコンのみ対象です。WebViewではAndroidのalgorithmic darkeningを有効にします。タイマーによる走査・画像解析・継続キャプチャはありません。
 

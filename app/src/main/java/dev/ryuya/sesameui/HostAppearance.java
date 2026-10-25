@@ -29,7 +29,9 @@ final class HostAppearance {
     long reset = 0;
     try (var cursor =
         context.getContentResolver().query(ConfigProvider.URI, null, null, null, null)) {
-      if (cursor != null && cursor.moveToFirst()) {
+      if (cursor == null || !cursor.moveToFirst())
+        throw new IllegalStateException("Configuration not visible");
+      {
         enabled = cursor.getInt(cursor.getColumnIndexOrThrow("enabled")) != 0;
         mode = cursor.getString(cursor.getColumnIndexOrThrow("mode"));
         reset = cursor.getLong(cursor.getColumnIndexOrThrow("reset"));
