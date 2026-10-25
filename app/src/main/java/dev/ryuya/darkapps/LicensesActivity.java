@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.os.Bundle;
 import android.text.*;

@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 /** Stored values are explicit so new UI choices cannot change existing preferences. */
 final class ThemeChoice {

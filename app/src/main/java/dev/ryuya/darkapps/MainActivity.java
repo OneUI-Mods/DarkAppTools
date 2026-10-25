@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.app.LocaleManager;
 import android.content.*;
@@ -20,9 +20,14 @@ import com.google.android.material.textview.MaterialTextView;
 
 /** Material 3 settings with a non-interactive, synthetic color preview. */
 public final class MainActivity extends AppCompatActivity {
-  private MaterialTextView status;
-  private MaterialCardView preview;
-  private LinearLayout previewBody;
+  private static final class PageState {
+    MaterialTextView status;
+    MaterialCardView preview;
+    LinearLayout previewBody;
+  }
+
+  private final java.util.Map<SupportedApp, PageState> pages =
+      new java.util.EnumMap<>(SupportedApp.class);
   private SettingsTabs tabs;
 
   public void onCreate(Bundle saved) {
@@ -61,18 +66,20 @@ public final class MainActivity extends AppCompatActivity {
             });
     root.addView(toolbar);
     tabs = new SettingsTabs(this, root, saved);
-    appearance(tabs.page(R.string.display_tab));
+    for (SupportedApp app : SupportedApp.values()) appearance(tabs.page(app.title), app);
     about(tabs.page(R.string.about_tab));
     tabs.restore();
     ViewCompat.requestApplyInsets(root);
   }
 
-  private void appearance(LinearLayout page) {
-    var prefs = ConfigProvider.settings(this);
+  private void appearance(LinearLayout page, SupportedApp app) {
+    PageState section = new PageState();
+    pages.put(app, section);
+    var prefs = app.settings(this);
     LinearLayout master = card(page, true);
     MaterialSwitch enabled = new MaterialSwitch(this);
-    enabled.setId(R.id.module_enabled);
-    enabled.setText(R.string.enabled);
+    enabled.setId(View.generateViewId());
+    enabled.setText(getString(R.string.enabled, getString(app.title)));
     enabled.setMinHeight(dp(56));
     enabled.setChecked(prefs.getBoolean("enabled", true));
     master.addView(enabled, new LinearLayout.LayoutParams(-1, -2));
@@ -80,7 +87,7 @@ public final class MainActivity extends AppCompatActivity {
     enabled.setOnCheckedChangeListener(
         (button, value) -> {
           prefs.edit().putBoolean("enabled", value).apply();
-          changed();
+          changed(app);
         });
     LinearLayout theme = card(page, false);
     theme.addView(text(R.string.appearance, true));
@@ -103,33 +110,34 @@ public final class MainActivity extends AppCompatActivity {
           View choice = group.findViewById(id);
           if (choice == null) return;
           prefs.edit().putString("mode", (String) choice.getTag()).apply();
-          changed();
+          changed(app);
         });
     theme.addView(text(R.string.restart_note, false));
     LinearLayout sample = card(page, false);
     sample.addView(text(R.string.preview_title, true));
-    preview = new MaterialCardView(this);
-    preview.setRadius(dp(20));
-    preview.setCardElevation(0);
-    preview.setStrokeWidth(0);
-    previewBody = vertical();
-    previewBody.setPadding(dp(20), dp(22), dp(20), dp(22));
-    preview.addView(previewBody);
+    section.preview = new MaterialCardView(this);
+    section.preview.setRadius(dp(20));
+    section.preview.setCardElevation(0);
+    section.preview.setStrokeWidth(0);
+    section.previewBody = vertical();
+    section.previewBody.setPadding(dp(20), dp(22), dp(20), dp(22));
+    section.preview.addView(section.previewBody);
     var size = new LinearLayout.LayoutParams(-1, -2);
     size.topMargin = dp(16);
     size.bottomMargin = dp(12);
-    sample.addView(preview, size);
+    sample.addView(section.preview, size);
     sample.addView(text(R.string.preview_note, false));
-    updatePreview();
+    updatePreview(app);
     LinearLayout state = card(page, false);
     state.addView(text(R.string.status_title, true));
-    status = text(R.string.status_waiting, false);
-    status.setPadding(0, dp(12), 0, dp(12));
-    state.addView(status);
+    section.status = text(R.string.status_waiting, false);
+    section.status.setPadding(0, dp(12), 0, dp(12));
+    state.addView(section.status);
     MaterialButton open = button(R.string.open_sesame);
+    open.setText(getString(R.string.open_sesame, getString(app.title)));
     open.setOnClickListener(
         v -> {
-          Intent intent = getPackageManager().getLaunchIntentForPackage(ConfigProvider.TARGET);
+          Intent intent = getPackageManager().getLaunchIntentForPackage(app.packageName);
           if (intent != null) startActivity(intent);
           else Toast.makeText(this, R.string.not_installed, Toast.LENGTH_SHORT).show();
         });
@@ -140,20 +148,28 @@ public final class MainActivity extends AppCompatActivity {
             startActivity(
                 new Intent(
                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.parse("package:" + ConfigProvider.TARGET))));
+                    Uri.parse("package:" + app.packageName))));
     state.addView(info, new LinearLayout.LayoutParams(-1, -2));
+    MaterialButton reset = button(R.string.guard_reset);
+    reset.setOnClickListener(
+        v -> {
+          app.settings(this).edit().putLong("reset", System.currentTimeMillis()).apply();
+          changed(app);
+        });
+    state.addView(reset, new LinearLayout.LayoutParams(-1, -2));
   }
 
-  private void changed() {
-    ConfigProvider.settings(this).edit().putString("state", "waiting").apply();
-    ConfigProvider.changed(this);
-    updatePreview();
-    refreshStatus();
+  private void changed(SupportedApp app) {
+    app.settings(this).edit().putString("state", "waiting").apply();
+    ConfigProvider.changed(this, app);
+    updatePreview(app);
+    refreshStatus(app);
   }
 
-  private void updatePreview() {
-    if (preview == null) return;
-    var prefs = ConfigProvider.settings(this);
+  private void updatePreview(SupportedApp app) {
+    PageState section = pages.get(app);
+    if (section.preview == null) return;
+    var prefs = app.settings(this);
     boolean night =
         (getResources().getConfiguration().uiMode
                 & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
@@ -161,18 +177,18 @@ public final class MainActivity extends AppCompatActivity {
     boolean dark =
         ThemeChoice.dark(
             prefs.getBoolean("enabled", true), prefs.getString("mode", ThemeChoice.SYSTEM), night);
-    preview.setCardBackgroundColor(dark ? DarkPalette.BACKGROUND : 0xfffafafa);
-    previewBody.removeAllViews();
+    section.preview.setCardBackgroundColor(dark ? DarkPalette.BACKGROUND : 0xfffafafa);
+    section.previewBody.removeAllViews();
     MaterialTextView title = text(R.string.preview_name, true);
     title.setTextColor(dark ? DarkPalette.TEXT : 0xff172327);
-    previewBody.addView(title);
+    section.previewBody.addView(title);
     MaterialTextView subtitle = text(R.string.preview_detail, false);
     subtitle.setTextColor(dark ? DarkPalette.SECONDARY : 0xff5f6c72);
     subtitle.setPadding(0, dp(8), 0, dp(16));
-    previewBody.addView(subtitle);
+    section.previewBody.addView(subtitle);
     View line = new View(this);
     line.setBackgroundColor(0xff28aeb1);
-    previewBody.addView(line, new LinearLayout.LayoutParams(dp(36), dp(4)));
+    section.previewBody.addView(line, new LinearLayout.LayoutParams(dp(36), dp(4)));
   }
 
   private void about(LinearLayout page) {
@@ -185,13 +201,6 @@ public final class MainActivity extends AppCompatActivity {
     LinearLayout guard = card(page, false);
     guard.addView(text(R.string.guard_title, true));
     guard.addView(text(R.string.guard_body, false));
-    MaterialButton reset = button(R.string.guard_reset);
-    reset.setOnClickListener(
-        v -> {
-          ConfigProvider.settings(this).edit().putLong("reset", System.currentTimeMillis()).apply();
-          changed();
-        });
-    guard.addView(reset);
     LinearLayout app = card(page, false);
     MaterialTextView version = text(R.string.app_name, true);
     app.addView(version);
@@ -204,16 +213,17 @@ public final class MainActivity extends AppCompatActivity {
         v ->
             startActivity(
                 new Intent(
-                    Intent.ACTION_VIEW, Uri.parse("https://github.com/OneUI-Mods/SesameUITools"))));
+                    Intent.ACTION_VIEW, Uri.parse("https://github.com/OneUI-Mods/DarkAppTools"))));
     app.addView(source);
     MaterialButton licenses = button(R.string.legal_title);
     licenses.setOnClickListener(v -> startActivity(new Intent(this, LicensesActivity.class)));
     app.addView(licenses);
   }
 
-  private void refreshStatus() {
-    if (status == null) return;
-    String state = ConfigProvider.settings(this).getString("state", "waiting");
+  private void refreshStatus(SupportedApp app) {
+    PageState section = pages.get(app);
+    if (section == null || section.status == null) return;
+    String state = app.settings(this).getString("state", "waiting");
     int label =
         switch (state) {
           case "dark" -> R.string.status_dark;
@@ -224,12 +234,12 @@ public final class MainActivity extends AppCompatActivity {
           case "error" -> R.string.status_error;
           default -> R.string.status_waiting;
         };
-    status.setText(label);
+    section.status.setText(label);
   }
 
   protected void onResume() {
     super.onResume();
-    refreshStatus();
+    for (SupportedApp app : SupportedApp.values()) refreshStatus(app);
   }
 
   protected void onSaveInstanceState(Bundle out) {
@@ -254,7 +264,7 @@ public final class MainActivity extends AppCompatActivity {
             primary
                 ? com.google.android.material.R.attr.colorPrimaryContainer
                 : com.google.android.material.R.attr.colorSurfaceContainerLow,
-            "SesameUITools"));
+            "DarkAppTools"));
     LinearLayout body = vertical();
     body.setPadding(dp(20), dp(16), dp(20), dp(16));
     card.addView(body);

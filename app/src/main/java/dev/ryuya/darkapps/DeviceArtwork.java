@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -7,7 +7,7 @@ import java.util.*;
 
 /** Darkens only the reviewed, bundled device-state artwork, never user photos or QR codes. */
 final class DeviceArtwork {
-  private static final Set<String> NAMES =
+  private static final Set<String> SESAME_NAMES =
       Set.of(
           "icon_lock",
           "icon_unlock",
@@ -24,6 +24,26 @@ final class DeviceArtwork {
           "swtich_locked",
           "swtich_unlocked");
 
+  private static final Set<String> POVO_NAMES =
+      Set.of(
+          "ic_menu_home",
+          "ic_menu_shop",
+          "ic_menu_faq",
+          "ic_menu_help",
+          "ic_menu_games",
+          "ic_menu_discover",
+          "ic_menu_not",
+          "ic_toolbar_profile",
+          "toolbar_profile_icon",
+          "icon_bell",
+          "ud_info_icon",
+          "ic_profile_placeholder");
+  private final Set<String> names;
+
+  DeviceArtwork(SupportedApp app) {
+    names = app == SupportedApp.SESAME ? SESAME_NAMES : POVO_NAMES;
+  }
+
   private record Key(int resource, int width, int height, int density) {}
 
   private final Map<Key, Bitmap> cache =
@@ -36,7 +56,7 @@ final class DeviceArtwork {
   synchronized Drawable map(Resources resources, int id, Drawable drawable) {
     if (!(drawable instanceof BitmapDrawable original)) return drawable;
     try {
-      if (!NAMES.contains(resources.getResourceEntryName(id))) return drawable;
+      if (!names.contains(resources.getResourceEntryName(id))) return drawable;
     } catch (Resources.NotFoundException missing) {
       return drawable;
     }

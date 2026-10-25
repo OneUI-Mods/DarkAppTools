@@ -45,12 +45,12 @@ def validate(apk, tools):
             raise RuntimeError("Expected API 102 module")
         if (
             archive.read(prefix + "java_init.list").decode().strip()
-            != "dev.ryuya.sesameui.HookEntry"
+            != "dev.ryuya.darkapps.HookEntry"
         ):
             raise RuntimeError("Unexpected module entry")
         if (
-            archive.read(prefix + "scope.list").decode().strip()
-            != "co.candyhouse.sesame2"
+            set(archive.read(prefix + "scope.list").decode().split())
+            != {"co.candyhouse.sesame2", "com.kddi.kdla.jp"}
         ):
             raise RuntimeError("Unexpected hook scope")
         if "assets/xposed_init" in names or any(
@@ -98,7 +98,7 @@ def main():
     validate(unsigned, tools)
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
-    target = dist / f"SesameUITools-{version}-release.apk"
+    target = dist / f"DarkAppTools-{version}-release.apk"
     with tempfile.TemporaryDirectory(prefix="sesame-ui-tools-") as folder:
         aligned = Path(folder) / "aligned.apk"
         run(tools / "zipalign", "-P", "16", "-f", "4", unsigned, aligned)
@@ -124,13 +124,13 @@ def main():
     if CERTIFICATE not in signature:
         raise RuntimeError("Distribution certificate mismatch")
     validate(target, tools)
-    (dist / f"SesameUITools-{version}-signature.txt").write_text(signature)
-    source = dist / f"SesameUITools-{version}-source.zip"
+    (dist / f"DarkAppTools-{version}-signature.txt").write_text(signature)
+    source = dist / f"DarkAppTools-{version}-source.zip"
     run(
         "git",
         "archive",
         "--format=zip",
-        "--prefix=SesameUITools-" + version + "/",
+        "--prefix=DarkAppTools-" + version + "/",
         "--output=" + str(source),
         args.source_ref,
     )

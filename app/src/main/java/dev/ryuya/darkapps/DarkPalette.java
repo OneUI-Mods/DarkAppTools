@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 /** Role-aware neutral conversion. Colored state indicators and transparent pixels are preserved. */
 final class DarkPalette {

@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.graphics.drawable.*;
 import android.view.*;
@@ -10,6 +10,11 @@ import java.util.*;
 final class NativeAppearance {
   private final Set<Drawable> processed = Collections.newSetFromMap(new WeakHashMap<>());
   private boolean applying;
+  private final NeutralIcons icons;
+
+  NativeAppearance(NeutralIcons icons) {
+    this.icons = icons;
+  }
 
   void tree(View view) {
     if (applying) return;
@@ -30,15 +35,25 @@ final class NativeAppearance {
       var mapped = ColorLists.map(old, false);
       if (mapped != old) view.setBackgroundTintList(mapped);
     }
+    boolean brightAccent = brightAccent(view);
+    if (view instanceof ImageView image) {
+      icons.contrast(image.getDrawable(), brightAccent);
+      var tint = image.getImageTintList();
+      if (tint != null && !brightAccent) {
+        var mapped = ColorLists.map(tint, true);
+        if (mapped != tint) image.setImageTintList(mapped);
+      }
+    }
     if (view instanceof TextView text) {
+      for (Drawable icon : text.getCompoundDrawables()) icons.contrast(icon, brightAccent);
       var old = text.getTextColors();
-      var mapped = ColorLists.map(old, true);
+      var mapped = brightAccent ? old : ColorLists.map(old, true);
       if (mapped != old) text.setTextColor(mapped);
       old = text.getHintTextColors();
-      mapped = ColorLists.map(old, true);
+      mapped = brightAccent ? old : ColorLists.map(old, true);
       if (mapped != old) text.setHintTextColor(mapped);
       old = text.getLinkTextColors();
-      mapped = ColorLists.map(old, true);
+      mapped = brightAccent ? old : ColorLists.map(old, true);
       if (mapped != old) text.setLinkTextColor(mapped);
     }
     if (view instanceof WebView web) {
@@ -49,6 +64,25 @@ final class NativeAppearance {
     }
     if (view instanceof ViewGroup group)
       for (int i = 0; i < group.getChildCount(); i++) visit(group.getChildAt(i));
+  }
+
+  private boolean brightAccent(View view) {
+    // Dark text on a yellow call-to-action must remain readable; photographs are not sampled.
+    for (int depth = 0; view != null && depth < 5; depth++) {
+      Drawable d = view.getBackground();
+      Integer color =
+          d instanceof ColorDrawable c
+              ? c.getColor()
+              : d instanceof GradientDrawable g && g.getColor() != null
+                  ? g.getColor().getDefaultColor()
+                  : null;
+      if (color != null && (color >>> 24) > 230) {
+        if (DarkPalette.neutral(color)) return false;
+        return androidx.core.graphics.ColorUtils.calculateLuminance(color) > 0.5;
+      }
+      view = view.getParent() instanceof View parent ? parent : null;
+    }
+    return false;
   }
 
   private void background(Drawable drawable) {

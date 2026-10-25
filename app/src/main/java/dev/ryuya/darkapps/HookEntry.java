@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.app.*;
 import android.content.Context;
@@ -12,13 +12,14 @@ import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.XposedModule;
 import java.lang.reflect.Method;
 
-/** Presentation-only hooks, confined to the Sesame main process. */
+/** Presentation-only hooks, confined to each supported app’s main process. */
 public final class HookEntry extends XposedModule {
   private HostAppearance appearance;
   private boolean installed;
+  private SupportedApp app;
 
   public void onPackageReady(PackageReadyParam param) {
-    if (installed || !ConfigProvider.TARGET.equals(param.getPackageName())) return;
+    if (installed || (app = SupportedApp.find(param.getPackageName())) == null) return;
     installed = true;
     try {
       intercept(
@@ -26,8 +27,8 @@ public final class HookEntry extends XposedModule {
           chain -> {
             Object result = chain.proceed();
             Context context = (Context) chain.getArg(0);
-            if (ConfigProvider.TARGET.equals(context.getPackageName())
-                && ConfigProvider.TARGET.equals(Application.getProcessName())) {
+            if (app.packageName.equals(context.getPackageName())
+                && app.packageName.equals(Application.getProcessName())) {
               initialize(context);
             }
             return result;
@@ -81,7 +82,7 @@ public final class HookEntry extends XposedModule {
     } catch (ReflectiveOperationException unsupported) {
       log(
           6,
-          "SesameUITools",
+          "DarkAppTools",
           "Platform contract unavailable: " + unsupported.getClass().getSimpleName());
     }
   }
@@ -110,28 +111,27 @@ public final class HookEntry extends XposedModule {
             return appearance.icons.map(resources, id, result);
           });
     } catch (ReflectiveOperationException unavailable) {
-      log(5, "SesameUITools", "Using native view fallback for drawable colors");
+      log(5, "DarkAppTools", "Using native view fallback for drawable colors");
     }
   }
 
   private void initialize(Context context) {
-    if (appearance != null || !ConfigProvider.TARGET.equals(context.getPackageName())) return;
+    if (appearance != null || !app.packageName.equals(context.getPackageName())) return;
     try {
-      appearance = new HostAppearance(context);
+      appearance = new HostAppearance(context, app);
     } catch (Exception unavailable) {
       Intent request =
           new Intent()
               .setComponent(
                   new android.content.ComponentName(
-                      BuildConfig.APPLICATION_ID,
-                      BuildConfig.APPLICATION_ID + ".ConfigurationAccessReceiver"));
+                      BuildConfig.APPLICATION_ID, ConfigurationAccessReceiver.class.getName()));
       context.sendBroadcast(
           request,
           null,
           android.app.BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle());
       log(
           5,
-          "SesameUITools",
+          "DarkAppTools",
           "Configuration access requested: " + unavailable.getClass().getSimpleName());
     }
   }

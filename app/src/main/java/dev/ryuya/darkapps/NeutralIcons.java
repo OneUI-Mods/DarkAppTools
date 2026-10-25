@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
@@ -9,6 +9,7 @@ import org.xmlpull.v1.XmlPullParser;
 /** Only monochrome XML vector UI icons are tinted; multicolor assets and bitmaps stay intact. */
 final class NeutralIcons {
   private final Map<Integer, Boolean> monochrome = new HashMap<>();
+  private final Set<Drawable> mapped = Collections.newSetFromMap(new WeakHashMap<>());
 
   synchronized Drawable map(Resources resources, int id, Drawable drawable) {
     if (drawable == null || !monochrome.computeIfAbsent(id, key -> inspect(resources, key)))
@@ -17,7 +18,13 @@ final class NeutralIcons {
     if (state == null) return drawable;
     Drawable copy = state.newDrawable(resources).mutate();
     copy.setTint(DarkPalette.TEXT);
+    mapped.add(copy);
     return copy;
+  }
+
+  synchronized void contrast(Drawable drawable, boolean brightBackground) {
+    if (drawable != null && mapped.contains(drawable))
+      drawable.setTint(brightBackground ? 0xff172327 : DarkPalette.TEXT);
   }
 
   private boolean inspect(Resources resources, int id) {

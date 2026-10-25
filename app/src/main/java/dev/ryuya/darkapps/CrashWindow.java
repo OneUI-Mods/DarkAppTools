@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 /** Repeated confirmed host crashes, rather than ordinary force-stops, trigger the guard. */
 final class CrashWindow {

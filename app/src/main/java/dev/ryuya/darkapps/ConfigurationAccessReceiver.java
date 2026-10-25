@@ -1,10 +1,12 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-/** Renews configuration access after boot/update or a request from the verified Sesame UID. */
+/**
+ * Renews configuration access after boot/update or a request from the verified supported app UID.
+ */
 public final class ConfigurationAccessReceiver extends BroadcastReceiver {
   public void onReceive(Context context, Intent intent) {
     String action = intent.getAction();
@@ -14,11 +16,14 @@ public final class ConfigurationAccessReceiver extends BroadcastReceiver {
       return;
     }
     int sender = getSentFromUid();
-    try {
-      if (sender == context.getPackageManager().getApplicationInfo(ConfigProvider.TARGET, 0).uid)
-        ConfigurationAccess.grant(context);
-    } catch (android.content.pm.PackageManager.NameNotFoundException unavailable) {
-      // Ignore callers that are not the installed Sesame application.
+    for (SupportedApp app : SupportedApp.values()) {
+      try {
+        if (sender == context.getPackageManager().getApplicationInfo(app.packageName, 0).uid) {
+          ConfigurationAccess.grant(context);
+          return;
+        }
+      } catch (android.content.pm.PackageManager.NameNotFoundException unavailable) {
+      }
     }
   }
 }

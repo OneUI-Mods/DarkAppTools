@@ -1,4 +1,4 @@
-package dev.ryuya.sesameui;
+package dev.ryuya.darkapps;
 
 import android.app.*;
 import android.content.*;
@@ -8,29 +8,32 @@ import android.view.*;
 import java.util.*;
 
 /**
- * One per Sesame process. Settings are sampled at launch, avoiding destructive screen recreation.
+ * One per supported app process. Settings are sampled at launch, avoiding destructive screen
+ * recreation.
  */
 final class HostAppearance {
   final Context context;
-  final NativeAppearance nativeViews = new NativeAppearance();
+  final SupportedApp app;
   final NeutralIcons icons = new NeutralIcons();
-  final DeviceArtwork artwork = new DeviceArtwork();
+  final NativeAppearance nativeViews = new NativeAppearance(icons);
+  final DeviceArtwork artwork;
   private final Set<View> watched = Collections.newSetFromMap(new WeakHashMap<>());
   private boolean dark;
   private int failures;
   private final String version;
   private CrashGuard guard;
 
-  HostAppearance(Context context) throws Exception {
+  HostAppearance(Context context, SupportedApp app) throws Exception {
+    this.app = app;
+    artwork = new DeviceArtwork(app);
     this.context =
         context.getApplicationContext() != null ? context.getApplicationContext() : context;
-    var packageInfo = context.getPackageManager().getPackageInfo(ConfigProvider.TARGET, 0);
+    var packageInfo = context.getPackageManager().getPackageInfo(app.packageName, 0);
     version = packageInfo.versionName;
     boolean enabled = false;
     String mode = ThemeChoice.SYSTEM;
     long reset = 0;
-    try (var cursor =
-        context.getContentResolver().query(ConfigProvider.URI, null, null, null, null)) {
+    try (var cursor = context.getContentResolver().query(app.uri(), null, null, null, null)) {
       if (cursor == null || !cursor.moveToFirst())
         throw new IllegalStateException("Configuration not visible");
       {
@@ -39,7 +42,7 @@ final class HostAppearance {
         reset = cursor.getLong(cursor.getColumnIndexOrThrow("reset"));
       }
     }
-    if (packageInfo.getLongVersionCode() != 906 || !"3.0.266".equals(version)) {
+    if (!app.accepts(packageInfo.getLongVersionCode(), version)) {
       report("unsupported");
       return;
     }
@@ -64,7 +67,7 @@ final class HostAppearance {
   }
 
   void prepare(Activity activity) {
-    if (!dark || !activity.getClass().getName().startsWith("co.candyhouse.app.")) return;
+    if (!dark || !activity.getClass().getName().startsWith(app.activityPrefix)) return;
     applyTheme(activity);
     activity
         .getWindow()
@@ -75,7 +78,7 @@ final class HostAppearance {
     int theme =
         themed
             .getResources()
-            .getIdentifier("ThemeOverlay.AppCompat.Dark", "style", ConfigProvider.TARGET);
+            .getIdentifier("ThemeOverlay.AppCompat.Dark", "style", app.packageName);
     if (theme == 0) {
       dark = false;
       report("unsupported");
@@ -128,9 +131,9 @@ final class HostAppearance {
       Bundle data = new Bundle();
       data.putString("state", state);
       data.putString("version", version);
-      context.getContentResolver().call(ConfigProvider.URI, "status", null, data);
+      context.getContentResolver().call(app.uri(), "status", app.packageName, data);
     } catch (RuntimeException unavailable) {
-      /* Optional status must never prevent Sesame from opening. */
+      /* Optional status must never prevent the host from opening. */
     }
   }
 }
