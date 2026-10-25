@@ -16,6 +16,7 @@ final class DeviceArtwork {
           "icon_logining",
           "icon_nosignal",
           "icon_nosetting",
+          "icon_opensensor",
           "swtich_no_ble",
           "swtich_receive_ble",
           "swtich_waitgatt",
