@@ -115,13 +115,16 @@ final class PovoAppearance {
 
   private boolean navigationRow(View view) {
     if (!(view instanceof android.view.ViewGroup row)) return false;
-    boolean arrow = false, help = false;
+    boolean arrow = false, actionText = false;
     for (int i = 0; i < row.getChildCount(); i++) {
       String child = name(row.getChildAt(i));
       arrow |= child.equals("ivNavArrow");
-      help |= child.equals("tvUnderlinedHelpText");
+      actionText |=
+          child.equals("tvUnderlinedHelpText")
+              || child.equals("tvAddress")
+              || child.equals("tvCardNo");
     }
-    return arrow && help;
+    return arrow && actionText;
   }
 
   private boolean insideProfile(View view) {
@@ -191,7 +194,8 @@ final class PovoAppearance {
   void icon(ImageView image, boolean brightAccent) {
     String name = name(image);
     boolean reviewed = MONOCHROME_VIEWS.contains(name);
-    // The account header reuses ivNavArrow for a different image; only tint chevron rows.
+    // The account header reuses ivNavArrow for a yellow info image. Only tint the reviewed
+    // navigation chevrons and the address/payment pencils, preserving that colored indicator.
     if (name.equals("ivNavArrow") && image.getParent() instanceof View parent)
       reviewed = navigationRow(parent);
     if (name.equals("icon")) {
