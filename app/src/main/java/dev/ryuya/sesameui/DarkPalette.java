@@ -27,6 +27,14 @@ final class DarkPalette {
     return color;
   }
 
+  static int artwork(int color) {
+    if ((color >>> 24) == 0 || !neutral(color)) return color;
+    int level = color & 255;
+    if (level >= 245) return alpha(color, SURFACE);
+    if (level >= 180) return alpha(color, 0xff56636a);
+    return alpha(color, TEXT);
+  }
+
   private static int alpha(int original, int replacement) {
     return (original & 0xff000000) | (replacement & 0x00ffffff);
   }

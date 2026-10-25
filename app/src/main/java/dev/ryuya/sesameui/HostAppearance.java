@@ -14,6 +14,7 @@ final class HostAppearance {
   final Context context;
   final NativeAppearance nativeViews = new NativeAppearance();
   final NeutralIcons icons = new NeutralIcons();
+  final DeviceArtwork artwork = new DeviceArtwork();
   private final Set<View> watched = Collections.newSetFromMap(new WeakHashMap<>());
   private boolean dark;
   private int failures;
@@ -21,7 +22,8 @@ final class HostAppearance {
   private CrashGuard guard;
 
   HostAppearance(Context context) throws Exception {
-    this.context = context;
+    this.context =
+        context.getApplicationContext() != null ? context.getApplicationContext() : context;
     var packageInfo = context.getPackageManager().getPackageInfo(ConfigProvider.TARGET, 0);
     version = packageInfo.versionName;
     boolean enabled = false;
@@ -50,7 +52,10 @@ final class HostAppearance {
         (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
             == Configuration.UI_MODE_NIGHT_YES;
     dark = ThemeChoice.dark(enabled, mode, night);
-    if (dark) guard.arm();
+    if (dark) {
+      guard.arm();
+      applyTheme(this.context);
+    }
     report(!enabled ? "disabled" : dark ? "dark" : "light");
   }
 
@@ -60,8 +65,15 @@ final class HostAppearance {
 
   void prepare(Activity activity) {
     if (!dark || !activity.getClass().getName().startsWith("co.candyhouse.app.")) return;
+    applyTheme(activity);
+    activity
+        .getWindow()
+        .setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(DarkPalette.BACKGROUND));
+  }
+
+  private void applyTheme(Context themed) {
     int theme =
-        activity
+        themed
             .getResources()
             .getIdentifier("ThemeOverlay.AppCompat.Dark", "style", ConfigProvider.TARGET);
     if (theme == 0) {
@@ -69,11 +81,8 @@ final class HostAppearance {
       report("unsupported");
       return;
     }
-    activity.getTheme().applyStyle(android.R.style.ThemeOverlay_Material_Dark, true);
-    activity.getTheme().applyStyle(theme, true);
-    activity
-        .getWindow()
-        .setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(DarkPalette.BACKGROUND));
+    themed.getTheme().applyStyle(android.R.style.Theme_Material_NoActionBar, true);
+    themed.getTheme().applyStyle(theme, true);
   }
 
   void window(Window window) {

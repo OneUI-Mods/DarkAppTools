@@ -23,8 +23,8 @@ final class NeutralIcons {
   private boolean inspect(Resources resources, int id) {
     try {
       String name = resources.getResourceEntryName(id);
-      if (!(name.startsWith("ic_") || name.startsWith("abc_ic_")) || name.contains("qr"))
-        return false;
+      if (!(name.startsWith("ic_") || name.startsWith("abc_ic_") || name.equals("svg_arrow_down"))
+          || name.contains("qr")) return false;
       try (XmlResourceParser xml = resources.getXml(id)) {
         boolean vector = false, visible = false;
         for (int event = xml.getEventType();

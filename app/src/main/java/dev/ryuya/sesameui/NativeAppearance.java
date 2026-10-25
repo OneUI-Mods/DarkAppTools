@@ -43,7 +43,8 @@ final class NativeAppearance {
     }
     if (view instanceof WebView web) {
       web.setBackgroundColor(DarkPalette.BACKGROUND);
-      web.getSettings().setAlgorithmicDarkeningAllowed(true);
+      if (!web.getSettings().isAlgorithmicDarkeningAllowed())
+        web.getSettings().setAlgorithmicDarkeningAllowed(true);
       return;
     }
     if (view instanceof ViewGroup group)

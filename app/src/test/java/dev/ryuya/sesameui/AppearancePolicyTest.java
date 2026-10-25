@@ -14,6 +14,14 @@ public final class AppearancePolicyTest {
   }
 
   @Test
+  public void artworkKeepsStateColorsAndHasDarkSurround() {
+    assertEquals(DarkPalette.SURFACE, DarkPalette.artwork(0xffffffff));
+    assertEquals(0xffcc4a44, DarkPalette.artwork(0xffcc4a44));
+    assertEquals(0xff28aeb1, DarkPalette.artwork(0xff28aeb1));
+    assertEquals(0, DarkPalette.artwork(0));
+  }
+
+  @Test
   public void keepsTransparency() {
     assertEquals(0x00000000, DarkPalette.background(0x00000000));
     assertEquals(0x00000000, DarkPalette.foreground(0x00000000));
