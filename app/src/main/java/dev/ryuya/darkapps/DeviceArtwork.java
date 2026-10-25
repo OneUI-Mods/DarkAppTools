@@ -5,7 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.*;
 import java.util.*;
 
-/** Darkens only the reviewed, bundled device-state artwork, never user photos or QR codes. */
+/** Darkens only the reviewed, bundled UI artwork, never user photos or QR codes. */
 final class DeviceArtwork {
   private static final Set<String> SESAME_NAMES =
       Set.of(

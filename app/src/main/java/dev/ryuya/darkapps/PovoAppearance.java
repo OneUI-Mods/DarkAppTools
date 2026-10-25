@@ -8,7 +8,7 @@ import android.widget.ImageView;
 import java.lang.reflect.*;
 import java.util.*;
 
-/** Reviewed rendering adapters for povo 1.71.0-JP; never substitute host views or drawables. */
+/** Reviewed povo 1.71.0-JP adapters; preserve host geometry and rasterize only known UI glyphs. */
 final class PovoAppearance {
   private record Card(
       Method get, Method set, Method strokeColor, Method strokeWidth, Method getStrokeColor) {
