@@ -31,16 +31,8 @@ final class NativeAppearance {
     }
   }
 
-  boolean attachedContent(View view) {
-    if (povo == null) return false;
-    if (povo.profileContent(view)) return true;
-    // RecyclerView can attach new notification/home rows during a scroll without a global
-    // layout event. Style the bound row before its first frame, rather than waiting for idle.
-    if (view.getParent() instanceof View parent) {
-      for (Class<?> type = parent.getClass(); type != null; type = type.getSuperclass())
-        if (type.getName().equals("androidx.recyclerview.widget.RecyclerView")) return true;
-    }
-    return false;
+  boolean profileContent(View view) {
+    return povo != null && povo.profileContent(view);
   }
 
   private void visit(View view) throws ReflectiveOperationException {
