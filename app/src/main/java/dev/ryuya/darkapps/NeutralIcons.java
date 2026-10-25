@@ -8,6 +8,12 @@ import org.xmlpull.v1.XmlPullParser;
 
 /** Only monochrome XML vector UI icons are tinted; multicolor assets and bitmaps stay intact. */
 final class NeutralIcons {
+  private int foreground = DarkPalette.TEXT;
+
+  void foreground(int color) {
+    foreground = color;
+  }
+
   private final Map<Integer, Boolean> monochrome = new HashMap<>();
   private final Set<Drawable> mapped = Collections.newSetFromMap(new WeakHashMap<>());
 
@@ -17,14 +23,14 @@ final class NeutralIcons {
     Drawable.ConstantState state = drawable.getConstantState();
     if (state == null) return drawable;
     Drawable copy = state.newDrawable(resources).mutate();
-    copy.setTint(DarkPalette.TEXT);
+    copy.setTint(foreground);
     mapped.add(copy);
     return copy;
   }
 
   synchronized void contrast(Drawable drawable, boolean brightBackground) {
     if (drawable != null && mapped.contains(drawable))
-      drawable.setTint(brightBackground ? 0xff172327 : DarkPalette.TEXT);
+      drawable.setTint(brightBackground ? 0xff172327 : foreground);
   }
 
   private boolean inspect(Resources resources, int id) {

@@ -43,13 +43,13 @@ final class NativeAppearance {
     }
     boolean brightAccent = brightAccent(view);
     if (view instanceof ImageView image) {
-      if (povo != null) povo.icon(image, brightAccent);
       icons.contrast(image.getDrawable(), brightAccent);
       var tint = image.getImageTintList();
       if (tint != null && !brightAccent) {
-        var mapped = ColorLists.map(tint, true);
+        var mapped = povo == null ? ColorLists.map(tint, true) : ColorLists.icon(tint);
         if (mapped != tint) image.setImageTintList(mapped);
       }
+      if (povo != null) povo.icon(image, brightAccent);
     }
     if (view instanceof TextView text) {
       for (Drawable icon : text.getCompoundDrawables()) icons.contrast(icon, brightAccent);

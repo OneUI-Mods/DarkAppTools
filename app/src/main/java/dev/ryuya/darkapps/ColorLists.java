@@ -17,14 +17,51 @@ final class ColorLists {
     };
   }
 
-  static synchronized ColorStateList map(ColorStateList original, boolean foreground) {
+  private enum Role {
+    FOREGROUND,
+    BACKGROUND,
+    CARD,
+    ICON
+  }
+
+  private static final java.util.Map<ColorStateList, ColorStateList> cardCache = cache();
+  private static final java.util.Map<ColorStateList, ColorStateList> iconCache = cache();
+
+  static ColorStateList map(ColorStateList original, boolean foreground) {
+    return map(original, foreground ? Role.FOREGROUND : Role.BACKGROUND);
+  }
+
+  static ColorStateList card(ColorStateList original) {
+    return map(original, Role.CARD);
+  }
+
+  static ColorStateList icon(ColorStateList original) {
+    return map(original, Role.ICON);
+  }
+
+  private static int color(int original, Role role) {
+    return switch (role) {
+      case FOREGROUND -> DarkPalette.foreground(original);
+      case BACKGROUND -> DarkPalette.background(original);
+      case CARD -> DarkPalette.card(original);
+      case ICON -> DarkPalette.icon(original);
+    };
+  }
+
+  private static synchronized ColorStateList map(ColorStateList original, Role role) {
     if (original == null) return null;
-    var cache = foreground ? foregroundCache : backgroundCache;
+    var cache =
+        switch (role) {
+          case FOREGROUND -> foregroundCache;
+          case BACKGROUND -> backgroundCache;
+          case CARD -> cardCache;
+          case ICON -> iconCache;
+        };
     ColorStateList cached = cache.get(original);
     if (cached != null) return cached;
     if (!original.isStateful()) {
       int color = original.getDefaultColor();
-      int mapped = foreground ? DarkPalette.foreground(color) : DarkPalette.background(color);
+      int mapped = color(color, role);
       ColorStateList result = mapped == color ? original : ColorStateList.valueOf(mapped);
       cache.put(original, result);
       return result;
@@ -41,8 +78,7 @@ final class ColorLists {
       if (colors == null || colors.length != count) return original;
       boolean changed = false;
       for (int i = 0; i < count; i++) {
-        int color =
-            foreground ? DarkPalette.foreground(colors[i]) : DarkPalette.background(colors[i]);
+        int color = color(colors[i], role);
         changed |= color != colors[i];
         colors[i] = color;
       }

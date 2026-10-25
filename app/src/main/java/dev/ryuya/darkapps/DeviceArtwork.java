@@ -39,9 +39,11 @@ final class DeviceArtwork {
           "ud_info_icon",
           "ic_profile_placeholder");
   private final Set<String> names;
+  private final boolean povo;
 
   DeviceArtwork(SupportedApp app) {
-    names = app == SupportedApp.SESAME ? SESAME_NAMES : POVO_NAMES;
+    povo = app == SupportedApp.POVO;
+    names = povo ? POVO_NAMES : SESAME_NAMES;
   }
 
   private record Key(int resource, int width, int height, int density) {}
@@ -74,7 +76,15 @@ final class DeviceArtwork {
       int[] pixels = new int[readable.getWidth() * readable.getHeight()];
       readable.getPixels(
           pixels, 0, readable.getWidth(), 0, 0, readable.getWidth(), readable.getHeight());
-      for (int i = 0; i < pixels.length; i++) pixels[i] = DarkPalette.artwork(pixels[i]);
+      for (int i = 0; i < pixels.length; i++) {
+        int original = pixels[i];
+        int mapped = DarkPalette.artwork(original);
+        if (povo && DarkPalette.neutral(original) && (original >>> 24) != 0)
+          mapped =
+              (original & 0xff000000)
+                  | (((original & 255) >= 245 ? DarkPalette.CARD : DarkPalette.ICON) & 0x00ffffff);
+        pixels[i] = mapped;
+      }
       result =
           Bitmap.createBitmap(
               pixels, readable.getWidth(), readable.getHeight(), Bitmap.Config.ARGB_8888);

@@ -4,6 +4,9 @@ package dev.ryuya.darkapps;
 final class DarkPalette {
   static final int BACKGROUND = 0xff14191c;
   static final int SURFACE = 0xff20282c;
+  static final int CARD = 0xff29353b;
+  static final int CARD_OUTLINE = 0xff596b75;
+  static final int ICON = 0xffffffff;
   static final int TEXT = 0xffe5edef;
   static final int SECONDARY = 0xffb4c2c8;
 
@@ -25,6 +28,15 @@ final class DarkPalette {
     if (level >= 205) return alpha(color, SURFACE);
     if (level >= 160) return alpha(color, 0xff465259);
     return color;
+  }
+
+  static int card(int color) {
+    if ((color >>> 24) != 0 && neutral(color) && (color & 255) >= 205) return alpha(color, CARD);
+    return background(color);
+  }
+
+  static int icon(int color) {
+    return (color >>> 24) == 0 || !neutral(color) ? color : alpha(color, ICON);
   }
 
   static int artwork(int color) {

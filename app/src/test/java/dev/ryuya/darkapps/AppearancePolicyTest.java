@@ -38,6 +38,17 @@ public final class AppearancePolicyTest {
   }
 
   @Test
+  public void povoCardsStaySeparateAndIconsAreWhite() {
+    int card = DarkPalette.card(0xfff5f7fa);
+    assertNotEquals(DarkPalette.BACKGROUND, card);
+    assertEquals(card, DarkPalette.card(card));
+    assertEquals(0xffffffff, DarkPalette.icon(0xff333333));
+    assertEquals(0x66ffffff, DarkPalette.icon(0x66333333));
+    assertEquals(0xffffe600, DarkPalette.card(0xffffe600));
+    assertEquals(0xffffe600, DarkPalette.icon(0xffffe600));
+  }
+
+  @Test
   public void systemModeFollowsDeviceAndSwitchWins() {
     assertTrue(ThemeChoice.dark(true, ThemeChoice.SYSTEM, true));
     assertFalse(ThemeChoice.dark(true, ThemeChoice.SYSTEM, false));

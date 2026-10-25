@@ -25,6 +25,7 @@ final class HostAppearance {
 
   HostAppearance(Context context, SupportedApp app) throws Exception {
     this.app = app;
+    if (app == SupportedApp.POVO) icons.foreground(DarkPalette.ICON);
     nativeViews = new NativeAppearance(icons, app);
     artwork = new DeviceArtwork(app);
     this.context =
