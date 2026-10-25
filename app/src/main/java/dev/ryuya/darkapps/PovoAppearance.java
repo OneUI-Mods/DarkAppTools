@@ -70,7 +70,7 @@ final class PovoAppearance {
       };
 
   private static final Set<String> MONOCHROME_VIEWS =
-      Set.of("planDetailsIcon", "planHistoryIcon", "navigation_bar_item_icon_view", "ivNavArrow");
+      Set.of("planDetailsIcon", "planHistoryIcon", "navigation_bar_item_icon_view");
 
   void surface(View view) throws ReflectiveOperationException {
     profileSurface(view);
@@ -104,22 +104,34 @@ final class PovoAppearance {
       }
       return;
     }
-    if (!(view instanceof android.view.ViewGroup row)) return;
-    boolean arrow = false, subtitle = false;
+    if (navigationRow(view) && insideProfile(view))
+      // Only the reviewed navigation rows, preserving their padding and click handlers.
+      solidColor(view, DarkPalette.CARD);
+  }
+
+  boolean profileContent(View view) {
+    return name(view).equals("profile_list") || (navigationRow(view) && insideProfile(view));
+  }
+
+  private boolean navigationRow(View view) {
+    if (!(view instanceof android.view.ViewGroup row)) return false;
+    boolean arrow = false, help = false;
     for (int i = 0; i < row.getChildCount(); i++) {
       String child = name(row.getChildAt(i));
       arrow |= child.equals("ivNavArrow");
-      subtitle |= child.equals("tvSubtitle");
+      help |= child.equals("tvUnderlinedHelpText");
     }
-    if (!arrow || !subtitle) return;
-    for (View parent = row; parent != null; ) {
+    return arrow && help;
+  }
+
+  private boolean insideProfile(View view) {
+    for (View parent = view; parent != null; ) {
       if (name(parent).equals("profile_list")) {
-        // Only the reviewed navigation rows, preserving their padding and click handlers.
-        solidColor(row, DarkPalette.CARD);
-        return;
+        return true;
       }
       parent = parent.getParent() instanceof View v ? v : null;
     }
+    return false;
   }
 
   private void solidColor(View view, int color) {
@@ -179,6 +191,9 @@ final class PovoAppearance {
   void icon(ImageView image, boolean brightAccent) {
     String name = name(image);
     boolean reviewed = MONOCHROME_VIEWS.contains(name);
+    // The account header reuses ivNavArrow for a different image; only tint chevron rows.
+    if (name.equals("ivNavArrow") && image.getParent() instanceof View parent)
+      reviewed = navigationRow(parent);
     if (name.equals("icon")) {
       // Only the SMS/call glyphs inside the reviewed usage cards, not arbitrary ImageViews.
       for (View parent = image; parent != null; ) {

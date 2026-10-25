@@ -31,6 +31,10 @@ final class NativeAppearance {
     }
   }
 
+  boolean profileContent(View view) {
+    return povo != null && povo.profileContent(view);
+  }
+
   private void visit(View view) throws ReflectiveOperationException {
     if (view == null) return;
     // Bitmaps, QR codes, camera previews and embedded Chromium surfaces are never recolored.

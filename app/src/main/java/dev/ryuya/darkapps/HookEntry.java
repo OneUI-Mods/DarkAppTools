@@ -83,6 +83,15 @@ public final class HookEntry extends XposedModule {
       // A list adapter can replace backgrounds or glyphs after layout without changing text.
       // Only attached povo views are revisited; partially constructed views stay untouched.
       intercept(
+          View.class.getDeclaredMethod("onAttachedToWindow"),
+          chain -> {
+            Object result = chain.proceed();
+            View view = (View) chain.getThisObject();
+            if (appearance != null && appearance.nativeViews.profileContent(view))
+              appearance.style(view);
+            return result;
+          });
+      intercept(
           View.class.getDeclaredMethod("setBackgroundColor", int.class),
           chain -> {
             Object result = chain.proceed();
