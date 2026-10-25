@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.XposedModule;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /** Presentation-only hooks, confined to each supported app’s main process. */
@@ -18,6 +19,7 @@ public final class HookEntry extends XposedModule {
   private HostAppearance appearance;
   private boolean installed;
   private SupportedApp app;
+  private boolean listBindingInstalled;
 
   public void onPackageReady(PackageReadyParam param) {
     if (installed || (app = SupportedApp.find(param.getPackageName())) == null) return;
@@ -165,6 +167,8 @@ public final class HookEntry extends XposedModule {
     if (appearance != null || !app.packageName.equals(context.getPackageName())) return;
     try {
       appearance = new HostAppearance(context, app);
+      if (app == SupportedApp.POVO && appearance.dark())
+        installListBinding(context.getClassLoader());
     } catch (Exception unavailable) {
       Intent request =
           new Intent()
@@ -179,6 +183,36 @@ public final class HookEntry extends XposedModule {
           5,
           "DarkAppTools",
           "Configuration access requested: " + unavailable.getClass().getSimpleName());
+    }
+  }
+
+  private void installListBinding(ClassLoader loader) {
+    if (listBindingInstalled) return;
+    try {
+      Class<?> adapter =
+          Class.forName("androidx.recyclerview.widget.RecyclerView$Adapter", false, loader);
+      for (Method method : adapter.getDeclaredMethods()) {
+        Class<?>[] parameters = method.getParameterTypes();
+        if (!method.getName().equals("bindViewHolder")
+            || parameters.length != 2
+            || parameters[1] != int.class) continue;
+        Field itemView = parameters[0].getField("itemView");
+        if (itemView.getType() != View.class) continue;
+        // Run after the complete adapter binding, including offscreen prefetch/recycled rows.
+        // The reviewed host retains this public final method; its holder type is minified.
+        intercept(
+            method,
+            chain -> {
+              Object result = chain.proceed();
+              if (appearance != null) appearance.style((View) itemView.get(chain.getArg(0)));
+              return result;
+            });
+        listBindingInstalled = true;
+        return;
+      }
+      log(5, "DarkAppTools", "List binding contract unavailable; using attached-view fallback");
+    } catch (ReflectiveOperationException unavailable) {
+      log(5, "DarkAppTools", "List binding contract unavailable; using attached-view fallback");
     }
   }
 
