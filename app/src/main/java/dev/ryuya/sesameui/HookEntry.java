@@ -67,28 +67,7 @@ public final class HookEntry extends XposedModule {
             return appearance.icons.map(
                 (Resources) chain.getThisObject(), (int) chain.getArg(0), result);
           });
-      // TypedArray and AppCompat can bypass the public Resources.getDrawable overload.
-      try {
-        Class<?> implementation = Class.forName("android.content.res.ResourcesImpl");
-        intercept(
-            implementation.getDeclaredMethod(
-                "loadDrawable",
-                Resources.class,
-                android.util.TypedValue.class,
-                int.class,
-                int.class,
-                Resources.Theme.class),
-            chain -> {
-              Drawable result = (Drawable) chain.proceed();
-              if (appearance == null || !appearance.dark()) return result;
-              Resources resources = (Resources) chain.getArg(0);
-              int id = (int) chain.getArg(2);
-              result = appearance.artwork.map(resources, id, result);
-              return appearance.icons.map(resources, id, result);
-            });
-      } catch (ReflectiveOperationException unavailable) {
-        log(5, "SesameUITools", "Using native view fallback for drawable colors");
-      }
+      installDrawableHook();
       // Binding code can recolor a recycled row without a layout pass.
       for (Class<?> arg : new Class<?>[] {int.class, android.content.res.ColorStateList.class}) {
         intercept(
@@ -104,6 +83,34 @@ public final class HookEntry extends XposedModule {
           6,
           "SesameUITools",
           "Platform contract unavailable: " + unsupported.getClass().getSimpleName());
+    }
+  }
+
+  /**
+   * Vector permits hidden-API access in the scoped host; this is never called by the settings app.
+   */
+  @android.annotation.SuppressLint("SoonBlockedPrivateApi")
+  private void installDrawableHook() {
+    try {
+      Class<?> implementation = Class.forName("android.content.res.ResourcesImpl");
+      intercept(
+          implementation.getDeclaredMethod(
+              "loadDrawable",
+              Resources.class,
+              android.util.TypedValue.class,
+              int.class,
+              int.class,
+              Resources.Theme.class),
+          chain -> {
+            Drawable result = (Drawable) chain.proceed();
+            if (appearance == null || !appearance.dark()) return result;
+            Resources resources = (Resources) chain.getArg(0);
+            int id = (int) chain.getArg(2);
+            result = appearance.artwork.map(resources, id, result);
+            return appearance.icons.map(resources, id, result);
+          });
+    } catch (ReflectiveOperationException unavailable) {
+      log(5, "SesameUITools", "Using native view fallback for drawable colors");
     }
   }
 
