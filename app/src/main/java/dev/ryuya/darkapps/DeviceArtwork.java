@@ -77,12 +77,13 @@ final class DeviceArtwork {
       readable.getPixels(
           pixels, 0, readable.getWidth(), 0, 0, readable.getWidth(), readable.getHeight());
       for (int i = 0; i < pixels.length; i++) {
-        int original = pixels[i];
-        int mapped = DarkPalette.artwork(original);
-        if (povo && DarkPalette.neutral(original) && (original >>> 24) != 0)
+        int pixelColor = pixels[i];
+        int mapped = DarkPalette.artwork(pixelColor);
+        if (povo && DarkPalette.neutral(pixelColor) && (pixelColor >>> 24) != 0)
           mapped =
-              (original & 0xff000000)
-                  | (((original & 255) >= 245 ? DarkPalette.CARD : DarkPalette.ICON) & 0x00ffffff);
+              (pixelColor & 0xff000000)
+                  | (((pixelColor & 255) >= 245 ? DarkPalette.CARD : DarkPalette.ICON)
+                      & 0x00ffffff);
         pixels[i] = mapped;
       }
       result =
