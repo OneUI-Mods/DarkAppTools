@@ -11,12 +11,14 @@ final class NativeAppearance {
   private final Set<Drawable> detached = Collections.newSetFromMap(new WeakHashMap<>());
   private final Set<Drawable> visited = Collections.newSetFromMap(new IdentityHashMap<>());
   private final PovoAppearance povo;
+  private final SesameAppearance sesame;
   private boolean applying;
   private final NeutralIcons icons;
 
   NativeAppearance(NeutralIcons icons, SupportedApp app) {
     this.icons = icons;
     povo = app == SupportedApp.POVO ? new PovoAppearance() : null;
+    sesame = app == SupportedApp.SESAME ? new SesameAppearance() : null;
   }
 
   void tree(View view) throws ReflectiveOperationException {
@@ -39,6 +41,7 @@ final class NativeAppearance {
     if (view == null) return;
     // Bitmaps, QR codes, camera previews and embedded Chromium surfaces are never recolored.
     if (povo != null) povo.surface(view);
+    if (sesame != null) sesame.surface(view);
     background(view.getBackground());
     if (view.getBackgroundTintList() != null) {
       var old = view.getBackgroundTintList();
