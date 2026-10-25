@@ -7,6 +7,7 @@ import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.*;
+import android.widget.ImageView;
 import android.widget.TextView;
 import io.github.libxposed.api.XposedInterface;
 import io.github.libxposed.api.XposedModule;
@@ -79,12 +80,48 @@ public final class HookEntry extends XposedModule {
               return result;
             });
       }
+      // A list adapter can replace backgrounds or glyphs after layout without changing text.
+      // Only attached povo views are revisited; partially constructed views stay untouched.
+      intercept(
+          View.class.getDeclaredMethod("setBackgroundColor", int.class),
+          chain -> {
+            Object result = chain.proceed();
+            restyleAttached((View) chain.getThisObject());
+            return result;
+          });
+      intercept(
+          View.class.getDeclaredMethod("setBackgroundDrawable", Drawable.class),
+          chain -> {
+            Object result = chain.proceed();
+            restyleAttached((View) chain.getThisObject());
+            return result;
+          });
+      intercept(
+          View.class.getDeclaredMethod(
+              "setBackgroundTintList", android.content.res.ColorStateList.class),
+          chain -> {
+            Object result = chain.proceed();
+            restyleAttached((View) chain.getThisObject());
+            return result;
+          });
+      intercept(
+          ImageView.class.getDeclaredMethod("setImageDrawable", Drawable.class),
+          chain -> {
+            Object result = chain.proceed();
+            restyleAttached((View) chain.getThisObject());
+            return result;
+          });
     } catch (ReflectiveOperationException unsupported) {
       log(
           6,
           "DarkAppTools",
           "Platform contract unavailable: " + unsupported.getClass().getSimpleName());
     }
+  }
+
+  private void restyleAttached(View view) {
+    if (app == SupportedApp.POVO && appearance != null && view.isAttachedToWindow())
+      appearance.style(view);
   }
 
   /**

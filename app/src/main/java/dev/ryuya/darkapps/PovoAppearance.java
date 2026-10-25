@@ -70,9 +70,10 @@ final class PovoAppearance {
       };
 
   private static final Set<String> MONOCHROME_VIEWS =
-      Set.of("planDetailsIcon", "planHistoryIcon", "navigation_bar_item_icon_view");
+      Set.of("planDetailsIcon", "planHistoryIcon", "navigation_bar_item_icon_view", "ivNavArrow");
 
   void surface(View view) throws ReflectiveOperationException {
+    profileSurface(view);
     Card card = CARDS.get(view.getClass());
     if (card == Card.NONE) return;
     ColorStateList old = (ColorStateList) card.get.invoke(view);
@@ -87,6 +88,45 @@ final class PovoAppearance {
           card.strokeWidth.invoke(
               view, Math.max(1, Math.round(view.getResources().getDisplayMetrics().density)));
       }
+    }
+  }
+
+  private void profileSurface(View view) {
+    // The host's profile is a fragment over the home screen. Its #faf7f7f7 background
+    // is almost opaque in light mode, but exposes home content after dark conversion.
+    if (name(view).equals("profile_list")) {
+      // Data binding clears the XML tag. Find the fragment's actual root by its container.
+      for (View root = view; root.getParent() instanceof View parent; root = parent) {
+        if (name(parent).equals("help_root_container")) {
+          solidColor(root, DarkPalette.BACKGROUND);
+          break;
+        }
+      }
+      return;
+    }
+    if (!(view instanceof android.view.ViewGroup row)) return;
+    boolean arrow = false, subtitle = false;
+    for (int i = 0; i < row.getChildCount(); i++) {
+      String child = name(row.getChildAt(i));
+      arrow |= child.equals("ivNavArrow");
+      subtitle |= child.equals("tvSubtitle");
+    }
+    if (!arrow || !subtitle) return;
+    for (View parent = row; parent != null; ) {
+      if (name(parent).equals("profile_list")) {
+        // Only the reviewed navigation rows, preserving their padding and click handlers.
+        solidColor(row, DarkPalette.CARD);
+        return;
+      }
+      parent = parent.getParent() instanceof View v ? v : null;
+    }
+  }
+
+  private void solidColor(View view, int color) {
+    if (view.getBackground() instanceof ColorDrawable background
+        && background.getColor() != color) {
+      background.mutate();
+      background.setColor(color);
     }
   }
 
