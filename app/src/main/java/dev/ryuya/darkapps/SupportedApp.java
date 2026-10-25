@@ -37,8 +37,8 @@ enum SupportedApp {
   }
 
   SharedPreferences settings(Context context) {
-    // Retain the installed Sesame module's existing settings when upgrading in place.
-    return context.getSharedPreferences(this == SESAME ? "appearance" : "appearance_povo", 0);
+    // Each supported app owns an independent appearance configuration.
+    return context.getSharedPreferences("appearance_" + key, 0);
   }
 
   static SupportedApp find(String packageName) {

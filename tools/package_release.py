@@ -23,7 +23,7 @@ def run(*args, capture=False):
 def validate(apk, tools):
     badging = run(tools / "aapt2", "dump", "badging", apk, capture=True).stdout
     if (
-        "name='dev.ryuya.sesameui'" not in badging
+        "name='dev.ryuya.darkapps'" not in badging
         or "targetSdkVersion:'37'" not in badging
     ):
         raise RuntimeError("Unexpected package or SDK")
@@ -32,6 +32,8 @@ def validate(apk, tools):
     manifest = run(
         tools / "aapt2", "dump", "xmltree", apk, "--file", "AndroidManifest.xml", capture=True
     ).stdout
+    if '"dev.ryuya.darkapps.config"' not in manifest or "dev.ryuya.sesameui" in manifest:
+        raise RuntimeError("Unexpected settings authority or legacy package reference")
     if any(
         word in manifest.lower()
         for word in ["testactivity", "probeactivity", "fixtureactivity", "instrumentation"]
@@ -88,6 +90,7 @@ def main():
         ":app:writeRuntimeDependencyList",
     )
     run(sys.executable, ROOT / "tools/check_license_catalog.py")
+    run(sys.executable, "-m", "unittest", "discover", "-s", "tools", "-p", "test_*.py")
     output = ROOT / "app/build/outputs/apk/release"
     metadata = json.loads((output / "output-metadata.json").read_text())
     if metadata["variantName"] != "release" or len(metadata["elements"]) != 1:
@@ -99,7 +102,7 @@ def main():
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
     target = dist / f"DarkAppTools-{version}-release.apk"
-    with tempfile.TemporaryDirectory(prefix="sesame-ui-tools-") as folder:
+    with tempfile.TemporaryDirectory(prefix="dark-app-tools-") as folder:
         aligned = Path(folder) / "aligned.apk"
         run(tools / "zipalign", "-P", "16", "-f", "4", unsigned, aligned)
         run(

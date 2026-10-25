@@ -6,11 +6,11 @@ android {
     compileSdk 37
     buildToolsVersion '37.0.0'
     defaultConfig {
-        applicationId 'dev.ryuya.sesameui'
+        applicationId 'dev.ryuya.darkapps'
         minSdk 36
         targetSdk 37
-        versionCode 8
-        versionName '0.2.1-experimental'
+        versionCode 9
+        versionName '0.3.0-experimental'
     }
     buildFeatures {
         buildConfig true

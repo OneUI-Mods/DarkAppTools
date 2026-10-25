@@ -15,7 +15,7 @@ final class CrashGuard {
   private long armedAt;
 
   CrashGuard(Context context, long reset) {
-    prefs = context.getSharedPreferences("sesame-ui.guard", 0);
+    prefs = context.getSharedPreferences("dark-apps.guard", 0);
     if (reset != prefs.getLong("reset", 0)) prefs.edit().clear().putLong("reset", reset).commit();
     blocked = prefs.getBoolean("blocked", false);
     int pid = prefs.getInt("pid", -1);

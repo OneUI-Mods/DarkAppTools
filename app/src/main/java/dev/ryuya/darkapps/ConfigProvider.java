@@ -7,7 +7,7 @@ import android.os.*;
 
 /** Per-app appearance settings. Runtime writes are limited to that app's installed UID. */
 public final class ConfigProvider extends ContentProvider {
-  static final Uri URI = Uri.parse("content://dev.ryuya.sesameui.config/settings");
+  static final Uri URI = Uri.parse("content://" + BuildConfig.APPLICATION_ID + ".config/settings");
 
   static void changed(Context c, SupportedApp app) {
     c.getContentResolver().notifyChange(app.uri(), null);
