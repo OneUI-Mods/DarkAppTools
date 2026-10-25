@@ -8,27 +8,33 @@ import java.util.*;
 
 /** Styles existing native views without replacing listeners, content or layout parameters. */
 final class NativeAppearance {
-  private final Set<Drawable> processed = Collections.newSetFromMap(new WeakHashMap<>());
+  private final Set<Drawable> detached = Collections.newSetFromMap(new WeakHashMap<>());
+  private final Set<Drawable> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+  private final PovoAppearance povo;
   private boolean applying;
   private final NeutralIcons icons;
 
-  NativeAppearance(NeutralIcons icons) {
+  NativeAppearance(NeutralIcons icons, SupportedApp app) {
     this.icons = icons;
+    povo = app == SupportedApp.POVO ? new PovoAppearance() : null;
   }
 
-  void tree(View view) {
+  void tree(View view) throws ReflectiveOperationException {
     if (applying) return;
     applying = true;
+    visited.clear();
     try {
       visit(view);
     } finally {
+      visited.clear();
       applying = false;
     }
   }
 
-  private void visit(View view) {
+  private void visit(View view) throws ReflectiveOperationException {
     if (view == null) return;
     // Bitmaps, QR codes, camera previews and embedded Chromium surfaces are never recolored.
+    if (povo != null) povo.surface(view);
     background(view.getBackground());
     if (view.getBackgroundTintList() != null) {
       var old = view.getBackgroundTintList();
@@ -37,6 +43,7 @@ final class NativeAppearance {
     }
     boolean brightAccent = brightAccent(view);
     if (view instanceof ImageView image) {
+      if (povo != null) povo.icon(image, brightAccent);
       icons.contrast(image.getDrawable(), brightAccent);
       var tint = image.getImageTintList();
       if (tint != null && !brightAccent) {
@@ -66,7 +73,7 @@ final class NativeAppearance {
       for (int i = 0; i < group.getChildCount(); i++) visit(group.getChildAt(i));
   }
 
-  private boolean brightAccent(View view) {
+  private boolean brightAccent(View view) throws ReflectiveOperationException {
     // Dark text on a yellow call-to-action must remain readable; photographs are not sampled.
     for (int depth = 0; view != null && depth < 5; depth++) {
       var tint = view.getBackgroundTintList();
@@ -77,12 +84,15 @@ final class NativeAppearance {
               && androidx.core.graphics.ColorUtils.calculateLuminance(color) > 0.5;
       }
       Drawable d = view.getBackground();
+      Integer hostColor = povo == null ? null : povo.backgroundColor(view);
       Integer color =
-          d instanceof ColorDrawable c
-              ? c.getColor()
-              : d instanceof GradientDrawable g && g.getColor() != null
-                  ? g.getColor().getDefaultColor()
-                  : null;
+          hostColor != null
+              ? hostColor
+              : d instanceof ColorDrawable c
+                  ? c.getColor()
+                  : d instanceof GradientDrawable g && g.getColor() != null
+                      ? g.getColor().getDefaultColor()
+                      : null;
       if (color != null && (color >>> 24) > 230) {
         if (DarkPalette.neutral(color)) return false;
         return androidx.core.graphics.ColorUtils.calculateLuminance(color) > 0.5;
@@ -92,18 +102,28 @@ final class NativeAppearance {
     return false;
   }
 
-  private void background(Drawable drawable) {
-    if (drawable == null || !processed.add(drawable)) return;
-    drawable.mutate();
-    if (drawable instanceof ColorDrawable color)
-      color.setColor(DarkPalette.background(color.getColor()));
-    else if (drawable instanceof GradientDrawable gradient) {
-      if (gradient.getColor() != null)
-        gradient.setColor(ColorLists.map(gradient.getColor(), false));
+  private void background(Drawable drawable) throws ReflectiveOperationException {
+    if (drawable == null || !visited.add(drawable)) return;
+    if (detached.add(drawable)) drawable.mutate();
+    if (povo != null) povo.shape(drawable);
+    if (drawable instanceof ColorDrawable color) {
+      int mapped = DarkPalette.background(color.getColor());
+      if (mapped != color.getColor()) color.setColor(mapped);
+    } else if (drawable instanceof GradientDrawable gradient) {
+      if (gradient.getColor() != null) {
+        var old = gradient.getColor();
+        var mapped = ColorLists.map(old, false);
+        if (mapped != old) gradient.setColor(mapped);
+      }
       int[] colors = gradient.getColors();
       if (colors != null) {
-        for (int i = 0; i < colors.length; i++) colors[i] = DarkPalette.background(colors[i]);
-        gradient.setColors(colors);
+        boolean changed = false;
+        for (int i = 0; i < colors.length; i++) {
+          int mapped = DarkPalette.background(colors[i]);
+          changed |= mapped != colors[i];
+          colors[i] = mapped;
+        }
+        if (changed) gradient.setColors(colors);
       }
     } else if (drawable instanceof LayerDrawable layers) {
       for (int i = 0; i < layers.getNumberOfLayers(); i++) background(layers.getDrawable(i));

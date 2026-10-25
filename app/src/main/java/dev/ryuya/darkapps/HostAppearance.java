@@ -15,7 +15,7 @@ final class HostAppearance {
   final Context context;
   final SupportedApp app;
   final NeutralIcons icons = new NeutralIcons();
-  final NativeAppearance nativeViews = new NativeAppearance(icons);
+  final NativeAppearance nativeViews;
   final DeviceArtwork artwork;
   private final Set<View> watched = Collections.newSetFromMap(new WeakHashMap<>());
   private boolean dark;
@@ -25,6 +25,7 @@ final class HostAppearance {
 
   HostAppearance(Context context, SupportedApp app) throws Exception {
     this.app = app;
+    nativeViews = new NativeAppearance(icons, app);
     artwork = new DeviceArtwork(app);
     this.context =
         context.getApplicationContext() != null ? context.getApplicationContext() : context;
