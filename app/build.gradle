@@ -9,8 +9,8 @@ android {
         applicationId 'dev.ryuya.darkapps'
         minSdk 36
         targetSdk 37
-        versionCode 11
-        versionName '0.3.1-experimental'
+        versionCode 12
+        versionName '0.3.2-experimental'
     }
     buildFeatures {
         buildConfig true
