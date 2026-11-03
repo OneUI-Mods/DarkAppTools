@@ -13,6 +13,10 @@ import android.graphics.drawable.PictureDrawable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import dev.ryuya.darkapps.compat.DexSymbols
+import dev.ryuya.darkapps.compat.compatibleField
+import dev.ryuya.darkapps.compat.compatibleMethod
+import dev.ryuya.darkapps.compat.compatibleName
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Collections
@@ -232,7 +236,7 @@ class PovoAppearance {
                 override fun computeValue(type: Class<*>): PovoAppearance.Card? {
                     var parent: Class<*>? = type
                     while (parent != null) {
-                        if (parent.getName() != "androidx.cardview.widget.CardView") {
+                        if (parent.compatibleName() != "androidx.cardview.widget.CardView") {
                             parent = parent.getSuperclass()
                             continue
                         }
@@ -242,16 +246,22 @@ class PovoAppearance {
                             var getStrokeColor: Method? = null
                             try {
                                 strokeColor =
-                                    type.getMethod("setStrokeColor", Int::class.javaPrimitiveType)
+                                    type.compatibleMethod(
+                                        "setStrokeColor",
+                                        Int::class.javaPrimitiveType,
+                                    )
                                 strokeWidth =
-                                    type.getMethod("setStrokeWidth", Int::class.javaPrimitiveType)
-                                getStrokeColor = type.getMethod("getStrokeColor")
+                                    type.compatibleMethod(
+                                        "setStrokeWidth",
+                                        Int::class.javaPrimitiveType,
+                                    )
+                                getStrokeColor = type.compatibleMethod("getStrokeColor")
                             } catch (ordinaryCard: NoSuchMethodException) {
                                 /* Surface contrast is sufficient for plain CardView. */
                             }
                             return PovoAppearance.Card(
-                                type.getMethod("getCardBackgroundColor"),
-                                type.getMethod(
+                                type.compatibleMethod("getCardBackgroundColor"),
+                                type.compatibleMethod(
                                     "setCardBackgroundColor",
                                     ColorStateList::class.java,
                                 ),
@@ -278,18 +288,19 @@ class PovoAppearance {
                     // HostAppearance's exact version gate must remain in place for this contract.
                     var parent: Class<*>? = type
                     while (parent != null) {
-                        if (parent.getName() != "Md.g") {
+                        if (parent.compatibleName() != "Md.g") {
                             parent = parent.getSuperclass()
                             continue
                         }
                         try {
-                            val state = Class.forName("Md.g\$b", false, type.getClassLoader())
-                            val fill = state.getField("c")
+                            val state =
+                                DexSymbols.findClass("Md.g\$b", false, type.getClassLoader())
+                            val fill = state.compatibleField("c")
                             if (fill.getType() != ColorStateList::class.java)
                                 return PovoAppearance.Shape.NONE
                             return PovoAppearance.Shape(
                                 fill,
-                                parent.getMethod("m", ColorStateList::class.java),
+                                parent.compatibleMethod("m", ColorStateList::class.java),
                             )
                         } catch (unavailable: ReflectiveOperationException) {
                             return PovoAppearance.Shape.NONE

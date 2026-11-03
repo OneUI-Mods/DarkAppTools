@@ -18,6 +18,10 @@ import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import dev.ryuya.darkapps.compat.DexSymbols
+import dev.ryuya.darkapps.compat.compatibleDeclaredMethod
+import dev.ryuya.darkapps.compat.compatibleField
+import dev.ryuya.darkapps.compat.compatibleName
 import io.github.libxposed.api.XposedInterface.Chain
 import io.github.libxposed.api.XposedInterface.ExceptionMode
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -39,7 +43,7 @@ class HookEntry : XposedModule() {
         installed = true
         try {
             intercept(
-                Application::class.java.getDeclaredMethod("attach", Context::class.java),
+                Application::class.java.compatibleDeclaredMethod("attach", Context::class.java),
                 Hooker { chain: Chain? ->
                     val result = chain!!.proceed()
                     val context: Context? = chain!!.getArg(0) as Context?
@@ -55,7 +59,7 @@ class HookEntry : XposedModule() {
             intercept(
                 Instrumentation::class
                     .java
-                    .getDeclaredMethod(
+                    .compatibleDeclaredMethod(
                         "callActivityOnCreate",
                         Activity::class.java,
                         Bundle::class.java,
@@ -72,7 +76,7 @@ class HookEntry : XposedModule() {
             intercept(
                 Instrumentation::class
                     .java
-                    .getDeclaredMethod("callActivityOnResume", Activity::class.java),
+                    .compatibleDeclaredMethod("callActivityOnResume", Activity::class.java),
                 Hooker { chain: Chain? ->
                     val result = chain!!.proceed()
                     val activity: Activity? = chain!!.getArg(0) as Activity?
@@ -82,7 +86,7 @@ class HookEntry : XposedModule() {
                 },
             )
             intercept(
-                Dialog::class.java.getDeclaredMethod("show"),
+                Dialog::class.java.compatibleDeclaredMethod("show"),
                 Hooker { chain: Chain? ->
                     val result = chain!!.proceed()
                     if (appearance != null)
@@ -93,7 +97,7 @@ class HookEntry : XposedModule() {
             intercept(
                 Resources::class
                     .java
-                    .getDeclaredMethod(
+                    .compatibleDeclaredMethod(
                         "getDrawable",
                         Int::class.javaPrimitiveType,
                         Theme::class.java,
@@ -115,7 +119,7 @@ class HookEntry : XposedModule() {
             for (arg in
                 arrayOf<Class<*>?>(Int::class.javaPrimitiveType, ColorStateList::class.java)) {
                 intercept(
-                    TextView::class.java.getDeclaredMethod("setTextColor", arg),
+                    TextView::class.java.compatibleDeclaredMethod("setTextColor", arg),
                     Hooker { chain: Chain? ->
                         val result = chain!!.proceed()
                         if (appearance != null) appearance!!.style(chain!!.getThisObject() as View?)
@@ -126,7 +130,7 @@ class HookEntry : XposedModule() {
             // A list adapter can replace backgrounds or glyphs after layout without changing text.
             // Only attached povo views are revisited; partially constructed views stay untouched.
             intercept(
-                View::class.java.getDeclaredMethod("onAttachedToWindow"),
+                View::class.java.compatibleDeclaredMethod("onAttachedToWindow"),
                 Hooker { chain: Chain? ->
                     val result = chain!!.proceed()
                     val view: View? = chain!!.getThisObject() as View?
@@ -138,15 +142,7 @@ class HookEntry : XposedModule() {
             intercept(
                 View::class
                     .java
-                    .getDeclaredMethod("setBackgroundColor", Int::class.javaPrimitiveType),
-                Hooker { chain: Chain? ->
-                    val result = chain!!.proceed()
-                    restyleAttached(chain!!.getThisObject() as View)
-                    result
-                },
-            )
-            intercept(
-                View::class.java.getDeclaredMethod("setBackgroundDrawable", Drawable::class.java),
+                    .compatibleDeclaredMethod("setBackgroundColor", Int::class.javaPrimitiveType),
                 Hooker { chain: Chain? ->
                     val result = chain!!.proceed()
                     restyleAttached(chain!!.getThisObject() as View)
@@ -156,7 +152,17 @@ class HookEntry : XposedModule() {
             intercept(
                 View::class
                     .java
-                    .getDeclaredMethod(
+                    .compatibleDeclaredMethod("setBackgroundDrawable", Drawable::class.java),
+                Hooker { chain: Chain? ->
+                    val result = chain!!.proceed()
+                    restyleAttached(chain!!.getThisObject() as View)
+                    result
+                },
+            )
+            intercept(
+                View::class
+                    .java
+                    .compatibleDeclaredMethod(
                         "setBackgroundTintList",
                         ColorStateList::class.java,
                     ),
@@ -167,7 +173,9 @@ class HookEntry : XposedModule() {
                 },
             )
             intercept(
-                ImageView::class.java.getDeclaredMethod("setImageDrawable", Drawable::class.java),
+                ImageView::class
+                    .java
+                    .compatibleDeclaredMethod("setImageDrawable", Drawable::class.java),
                 Hooker { chain: Chain? ->
                     val result = chain!!.proceed()
                     restyleAttached(chain!!.getThisObject() as View)
@@ -194,9 +202,9 @@ class HookEntry : XposedModule() {
     @SuppressLint("SoonBlockedPrivateApi")
     private fun installDrawableHook() {
         try {
-            val implementation = Class.forName("android.content.res.ResourcesImpl")
+            val implementation = DexSymbols.findClass("android.content.res.ResourcesImpl")
             intercept(
-                implementation.getDeclaredMethod(
+                implementation.compatibleDeclaredMethod(
                     "loadDrawable",
                     Resources::class.java,
                     TypedValue::class.java,
@@ -219,6 +227,10 @@ class HookEntry : XposedModule() {
     }
 
     private fun initialize(context: Context) {
+        DexSymbols.whenPrepared(context) { initializePrepared(context) }
+    }
+
+    private fun initializePrepared(context: Context) {
         if (appearance != null || app!!.packageName != context.getPackageName()) return
         try {
             appearance = HostAppearance(context, app!!)
@@ -230,7 +242,7 @@ class HookEntry : XposedModule() {
                     .setComponent(
                         ComponentName(
                             BuildConfig.APPLICATION_ID,
-                            ConfigurationAccessReceiver::class.java.getName(),
+                            ConfigurationAccessReceiver::class.java.compatibleName(),
                         )
                     )
             context.sendBroadcast(
@@ -250,16 +262,20 @@ class HookEntry : XposedModule() {
         if (listBindingInstalled) return
         try {
             val adapter =
-                Class.forName("androidx.recyclerview.widget.RecyclerView\$Adapter", false, loader)
+                DexSymbols.findClass(
+                    "androidx.recyclerview.widget.RecyclerView\$Adapter",
+                    false,
+                    loader,
+                )
             for (method in adapter.getDeclaredMethods()) {
                 val parameters = method.getParameterTypes()
                 if (
-                    (method.getName() != "bindViewHolder") ||
+                    (method.compatibleName() != "bindViewHolder") ||
                         parameters.size != 2 ||
                         parameters[1] != Int::class.javaPrimitiveType
                 )
                     continue
-                val itemView = parameters[0].getField("itemView")
+                val itemView = parameters[0].compatibleField("itemView")
                 if (itemView.getType() != View::class.java) continue
                 // Run after the complete adapter binding, including offscreen prefetch/recycled
                 // rows.

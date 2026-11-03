@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.Window
 import android.view.WindowInsetsController
+import dev.ryuya.darkapps.compat.compatibleName
 import java.util.Collections
 import java.util.WeakHashMap
 import kotlin.jvm.JvmField
@@ -55,7 +56,10 @@ class HostAppearance(context: Context, app: SupportedApp) {
                 reset = cursor.getLong(cursor.getColumnIndexOrThrow("reset"))
             }
         }
-        if (!app.accepts(packageInfo.getLongVersionCode(), version)) {
+        if (
+            !app.accepts(packageInfo.getLongVersionCode(), version) &&
+                !dev.ryuya.darkapps.compat.DexSymbols.provenTarget(context.classLoader)
+        ) {
             report("unsupported")
             return
         }
@@ -80,7 +84,7 @@ class HostAppearance(context: Context, app: SupportedApp) {
     }
 
     fun prepare(activity: Activity) {
-        if (!dark || !activity.javaClass.getName().startsWith(app.activityPrefix)) return
+        if (!dark || !activity.javaClass.compatibleName().startsWith(app.activityPrefix)) return
         applyTheme(activity)
         activity.getWindow().setBackgroundDrawable(ColorDrawable(DarkPalette.BACKGROUND))
     }

@@ -20,5 +20,9 @@
             </intent-filter>
         </receiver>
         <provider android:name=".ConfigProvider" android:authorities="${applicationId}.config" android:exported="true" android:grantUriPermissions="true"/>
+            <provider android:name="dev.ryuya.darkapps.compat.DexKitProvider" android:authorities="${applicationId}.dexkit" android:exported="true" />
+        <receiver android:name="dev.ryuya.darkapps.compat.DexKitPackageReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.PACKAGE_REPLACED"/><action android:name="android.intent.action.PACKAGE_ADDED"/><data android:scheme="package"/></intent-filter>
+        </receiver>
     </application>
 </manifest>

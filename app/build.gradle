@@ -9,8 +9,8 @@ android {
         applicationId 'dev.ryuya.darkapps'
         minSdk 36
         targetSdk 37
-        versionCode 12
-        versionName '0.3.2-experimental'
+        versionCode 13
+        versionName '0.4.0-experimental'
     }
     buildFeatures {
         buildConfig true
@@ -30,6 +30,7 @@ android {
     }
 }
 dependencies {
+    implementation("org.luckypray:dexkit:2.3.0")
     implementation 'io.github.libxposed:service:102.0.0'
 
     compileOnly 'io.github.libxposed:api:102.0.0'
