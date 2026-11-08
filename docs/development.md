@@ -90,3 +90,7 @@ Android 17実機で旧版・新版の署名照合、設定と言語のバック�
 - [Kotlin移行の設計と検証範囲](kotlin-migration.md)
 
 - [探索・保存・更新時の互換性](dexkit-compatibility.md)
+
+## CPU・メモリ効率
+
+[変更内容と検証範囲](efficiency.md)を参照してください。
