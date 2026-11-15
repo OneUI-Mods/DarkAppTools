@@ -22,6 +22,7 @@ import dev.ryuya.darkapps.compat.DexSymbols
 import dev.ryuya.darkapps.compat.compatibleDeclaredMethod
 import dev.ryuya.darkapps.compat.compatibleField
 import dev.ryuya.darkapps.compat.compatibleName
+import dev.ryuya.darkapps.startup.FirstUnlockGate
 import io.github.libxposed.api.XposedInterface.Chain
 import io.github.libxposed.api.XposedInterface.ExceptionMode
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -33,6 +34,7 @@ import kotlin.math.log
 /* Presentation-only hooks, confined to each supported app’s main process. */
 class HookEntry : XposedModule() {
     private var appearance: HostAppearance? = null
+    private val firstUnlock = FirstUnlockGate()
     private var installed: Boolean = false
     private var app: SupportedApp? = null
     private var listBindingInstalled: Boolean = false
@@ -227,7 +229,9 @@ class HookEntry : XposedModule() {
     }
 
     private fun initialize(context: Context) {
-        DexSymbols.whenPrepared(context) { initializePrepared(context) }
+        firstUnlock.run(context) {
+            DexSymbols.whenPrepared(context) { initializePrepared(context) }
+        }
     }
 
     private fun initializePrepared(context: Context) {
@@ -243,7 +247,7 @@ class HookEntry : XposedModule() {
                         ComponentName(
                             BuildConfig.APPLICATION_ID,
                             ConfigurationAccessReceiver::class.java.compatibleName(),
-                        )
+                        ),
                     )
             context.sendBroadcast(
                 request,
