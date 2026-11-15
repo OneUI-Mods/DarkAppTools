@@ -1,5 +1,7 @@
 # Dark App Tools
 
+[日本語](README.md) · [English](README.en.md)
+
 セサミとpovoにダークモードを追加するVectorモジュールです。アプリごとに配色を選べます。
 
 ## できること
