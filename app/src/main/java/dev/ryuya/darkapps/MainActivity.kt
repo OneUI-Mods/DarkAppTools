@@ -76,14 +76,14 @@ class MainActivity : AppCompatActivity() {
                                 getSystemService<LocaleManager?>(LocaleManager::class.java)
                                     .setApplicationLocales(
                                         LocaleList.forLanguageTags(
-                                            if (which == 1) "ja" else if (which == 2) "en" else ""
-                                        )
+                                            if (which == 1) "ja" else if (which == 2) "en" else "",
+                                        ),
                                     )
                             },
                         )
                         .show()
                     true
-                }
+                },
             )
         root.addView(toolbar)
         tabs = SettingsTabs(this, root, saved)
@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
                 value: Boolean ->
                 prefs!!.edit().putBoolean("enabled", value).apply()
                 changed(app)
-            }
+            },
         )
         val theme = card(page, false)
         theme.addView(text(R.string.appearance, true))
@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                 if (choice == null) return@OnCheckedChangeListener
                 prefs!!.edit().putString("mode", choice.getTag() as String?).apply()
                 changed(app)
-            }
+            },
         )
         theme.addView(text(R.string.restart_note, false))
         val sample = card(page, false)
@@ -165,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                 val intent = getPackageManager().getLaunchIntentForPackage(app.packageName)
                 if (intent != null) startActivity(intent)
                 else Toast.makeText(this, R.string.not_installed, Toast.LENGTH_SHORT).show()
-            }
+            },
         )
         state.addView(open, android.widget.LinearLayout.LayoutParams(-1, -2))
         val info = button(R.string.app_info)
@@ -175,9 +175,9 @@ class MainActivity : AppCompatActivity() {
                     Intent(
                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                         Uri.parse("package:" + app.packageName),
-                    )
+                    ),
                 )
-            }
+            },
         )
         state.addView(info, android.widget.LinearLayout.LayoutParams(-1, -2))
         val reset = button(R.string.guard_reset)
@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity() {
             android.view.View.OnClickListener { v: View? ->
                 app.settings(this)!!.edit().putLong("reset", System.currentTimeMillis()).apply()
                 changed(app)
-            }
+            },
         )
         state.addView(reset, android.widget.LinearLayout.LayoutParams(-1, -2))
     }
@@ -236,6 +236,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun about(page: LinearLayout) {
+        val startup = card(page, false)
+        startup.addView(
+            MaterialSwitch(this).apply {
+                setText(R.string.start_on_boot)
+                minHeight = (56 * resources.displayMetrics.density).toInt()
+                isChecked = BootSettings.enabled(this@MainActivity)
+                setOnCheckedChangeListener { _, checked ->
+                    BootSettings.setEnabled(this@MainActivity, checked)
+                }
+            },
+        )
+        startup.addView(text(R.string.start_on_boot_detail, false))
         val setup = card(page, false)
         setup.addView(text(R.string.setup_title, true))
         setup.addView(text(R.string.setup_body, false))
@@ -259,16 +271,16 @@ class MainActivity : AppCompatActivity() {
                     Intent(
                         Intent.ACTION_VIEW,
                         Uri.parse("https://github.com/OneUI-Mods/DarkAppTools"),
-                    )
+                    ),
                 )
-            }
+            },
         )
         app.addView(source)
         val licenses = button(R.string.legal_title)
         licenses.setOnClickListener(
             android.view.View.OnClickListener { v: View? ->
                 startActivity(Intent(this, LicensesActivity::class.java))
-            }
+            },
         )
         app.addView(licenses)
     }
@@ -317,7 +329,7 @@ class MainActivity : AppCompatActivity() {
                 if (primary) com.google.android.material.R.attr.colorPrimaryContainer
                 else com.google.android.material.R.attr.colorSurfaceContainerLow,
                 "DarkAppTools",
-            )
+            ),
         )
         val body = vertical()
         body.setPadding(dp(20), dp(16), dp(20), dp(16))
@@ -333,7 +345,7 @@ class MainActivity : AppCompatActivity() {
         view.setText(label)
         view.setTextAppearance(
             if (title) com.google.android.material.R.style.TextAppearance_Material3_TitleMedium
-            else com.google.android.material.R.style.TextAppearance_Material3_BodyMedium
+            else com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
         )
         view.setLineSpacing(dp(3).toFloat(), 1f)
         view.setPadding(0, dp(6), 0, dp(6))

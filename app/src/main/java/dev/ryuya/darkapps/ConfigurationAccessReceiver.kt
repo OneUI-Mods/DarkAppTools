@@ -12,6 +12,8 @@ class ConfigurationAccessReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.getAction()
         if (Intent.ACTION_BOOT_COMPLETED == action || Intent.ACTION_MY_PACKAGE_REPLACED == action) {
+            if (intent.action == Intent.ACTION_BOOT_COMPLETED && !BootSettings.enabled(context))
+                return
             ConfigurationAccess.grant(context)
             return
         }
