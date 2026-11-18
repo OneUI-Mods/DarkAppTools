@@ -1,6 +1,6 @@
 # 配布手順
 
-JDK 21とAndroid SDK 37で、全ソースをコミットした後に実行します。
+JDK 27とAndroid SDK 37.2で、全ソースをコミットした後に実行します。
 
 ```sh
 python3 tools/package_release.py --source-ref HEAD
