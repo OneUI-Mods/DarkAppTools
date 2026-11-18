@@ -75,3 +75,5 @@ The previous handling of certain whitespace in license search and version displa
 ## Compatibility after updates
 
 After a target-app update, open this module once to complete preparation, then reopen the target. Discovery results remain in this module's own internal app data and are not rescanned when unchanged. No other OneUI Mods app is required. Features stop applying if a unique compatible target cannot be confirmed. Compatibility with every OS or app update is not guaranteed.
+
+[Build environment / ビルド環境](docs/build-environment.md)

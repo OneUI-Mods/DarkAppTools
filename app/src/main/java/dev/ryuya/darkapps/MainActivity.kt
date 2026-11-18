@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
                                 d: DialogInterface?,
                                 which: Int ->
                                 getSystemService<LocaleManager?>(LocaleManager::class.java)
-                                    .setApplicationLocales(
+                                    ?.setApplicationLocales(
                                         LocaleList.forLanguageTags(
                                             if (which == 1) "ja" else if (which == 2) "en" else "",
                                         ),

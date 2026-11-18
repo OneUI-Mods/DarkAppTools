@@ -20,7 +20,7 @@ NativeAppearanceはレイアウト更新時と文字色設定時に、背景と�
 
 ## ビルドと確認
 
-JDK 21とAndroid SDK 37を使用します。
+JDK 27とAndroid SDK 37を使用します。
 
 ```sh
 ./gradlew :app:testDebugUnitTest :app:lintRelease :app:assembleRelease :app:writeRuntimeDependencyList
@@ -94,3 +94,5 @@ Android 17実機で旧版・新版の署名照合、設定と言語のバック�
 ## CPU・メモリ効率
 
 [変更内容と検証範囲](efficiency.md)を参照してください。
+
+[Build environment / ビルド環境](build-environment.md)

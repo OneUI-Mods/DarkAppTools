@@ -26,7 +26,8 @@ class CrashGuard(context: Context, reset: Long) {
             for (exit in
                 context
                     .getSystemService<ActivityManager?>(ActivityManager::class.java)
-                    .getHistoricalProcessExitReasons(context.getPackageName(), pid, 4)) {
+                    ?.getHistoricalProcessExitReasons(context.getPackageName(), pid, 4)
+                    .orEmpty()) {
                 if (
                     exit.getTimestamp() < operation ||
                         exit.getTimestamp() <= prefs.getLong("consumed", 0)
