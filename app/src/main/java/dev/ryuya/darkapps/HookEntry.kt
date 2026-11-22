@@ -14,6 +14,9 @@ import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Process
 import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
@@ -25,8 +28,11 @@ import dev.ryuya.darkapps.compat.compatibleName
 import dev.ryuya.darkapps.startup.FirstUnlockGate
 import io.github.libxposed.api.XposedInterface.Chain
 import io.github.libxposed.api.XposedInterface.ExceptionMode
+import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
+import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
+import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import java.lang.reflect.Method
 import kotlin.math.log
@@ -38,13 +44,58 @@ class HookEntry : XposedModule() {
     private var installed: Boolean = false
     private var app: SupportedApp? = null
     private var listBindingInstalled: Boolean = false
+    private val main = Handler(Looper.getMainLooper())
+    private val handles = ArrayList<HookHandle>()
+    @Volatile private var retired = false
 
     override fun onPackageReady(param: PackageReadyParam) {
         if (installed || (SupportedApp.find(param.getPackageName()).also { app = it }) == null)
             return
         installed = true
+        installHooks(initial = true)
+    }
+
+    override fun onHotReloading(param: HotReloadingParam): Boolean {
+        return MainThreadReload.run(main) handOff@{
+            val host = appearance ?: return@handOff false
+            if (Application.getProcessName() != host.app.packageName) return@handOff false
+            param.setSavedInstanceState(arrayOf(host.context, host.exportRoots()))
+            retired = true
+            host.retire()
+            DexSymbols.detachObserver()
+            true
+        }
+    }
+
+    override fun onHotReloaded(param: HotReloadedParam) {
+        val state = param.savedInstanceState as? Array<*> ?: return
+        val host = state.getOrNull(0) as? Context ?: return
+        if (param.processName != host.packageName) return
+        val supported = SupportedApp.find(host.packageName) ?: return
+        val roots = state.getOrNull(1) as? Array<*> ?: return
+        val previous = param.oldHookHandles
+        main.post {
+            installed = true
+            app = supported
+            DexSymbols.whenPrepared(host) {
+                if (!installHooks(initial = false)) return@whenPrepared
+                initializePrepared(host)
+                val ready = appearance
+                if (ready == null) {
+                    removeHooks()
+                    return@whenPrepared
+                }
+                ready.restoreRoots(roots)
+                previous.forEach { it.unhook() }
+                log(4, "DarkAppTools", "ONEUI_MODS_HOT_RELOAD package=${BuildConfig.APPLICATION_ID} " +
+                    "version=${BuildConfig.VERSION_CODE} pid=${Process.myPid()}")
+            }
+        }
+    }
+
+    private fun installHooks(initial: Boolean): Boolean {
         try {
-            intercept(
+            if (initial) intercept(
                 Application::class.java.compatibleDeclaredMethod("attach", Context::class.java),
                 Hooker { chain: Chain? ->
                     val result = chain!!.proceed()
@@ -184,12 +235,15 @@ class HookEntry : XposedModule() {
                     result
                 },
             )
+            return true
         } catch (unsupported: ReflectiveOperationException) {
+            removeHooks()
             log(
                 6,
                 "DarkAppTools",
                 "Platform contract unavailable: " + unsupported.javaClass.getSimpleName(),
             )
+            return false
         }
     }
 
@@ -235,7 +289,7 @@ class HookEntry : XposedModule() {
     }
 
     private fun initializePrepared(context: Context) {
-        if (appearance != null || app!!.packageName != context.getPackageName()) return
+        if (retired || appearance != null || app!!.packageName != context.getPackageName()) return
         try {
             appearance = HostAppearance(context, app!!)
             if (app == SupportedApp.POVO && appearance!!.dark())
@@ -311,6 +365,12 @@ class HookEntry : XposedModule() {
     }
 
     private fun intercept(method: Method?, hooker: Hooker?) {
-        hook(method!!).setExceptionMode(ExceptionMode.PROTECTIVE).intercept(hooker!!)
+        handles += hook(method!!).setId("dark-app-tools").setExceptionMode(ExceptionMode.PROTECTIVE)
+            .intercept { chain -> if (retired) chain.proceed() else hooker!!.intercept(chain) }
+    }
+
+    private fun removeHooks() {
+        handles.asReversed().forEach { it.unhook() }
+        handles.clear()
     }
 }

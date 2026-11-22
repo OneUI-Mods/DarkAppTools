@@ -10,7 +10,7 @@ import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.Window
 import android.view.WindowInsetsController
 import dev.ryuya.darkapps.compat.compatibleName
-import java.util.Collections
+import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 import kotlin.jvm.JvmField
 
@@ -24,9 +24,8 @@ class HostAppearance(context: Context, app: SupportedApp) {
     @JvmField val icons: NeutralIcons = NeutralIcons()
     @JvmField val nativeViews: NativeAppearance
     @JvmField val artwork: DeviceArtwork
-    private val watched: MutableSet<View?>? =
-        Collections.newSetFromMap<View?>(WeakHashMap<View?, Boolean?>())
-    private var dark: Boolean = false
+    private val watched = WeakHashMap<View, OnGlobalLayoutListener>()
+    @Volatile private var dark: Boolean = false
     private var failures: Int = 0
     private var version: String? = null
     private var guard: CrashGuard? = null
@@ -122,10 +121,31 @@ class HostAppearance(context: Context, app: SupportedApp) {
     fun watch(root: View?) {
         if (!dark || root == null) return
         style(root)
-        if (!watched!!.add(root)) return
-        // Layout events cover navigation, recycled list entries and text updates, without a frame
-        // timer.
-        root.getViewTreeObserver().addOnGlobalLayoutListener(OnGlobalLayoutListener { style(root) })
+        if (watched.containsKey(root)) return
+        // Layout events cover navigation, recycled list entries and text updates.
+        val owner = WeakReference(root)
+        val listener = OnGlobalLayoutListener { owner.get()?.let(::style) }
+        root.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        watched[root] = listener
+    }
+
+    internal fun exportRoots(): Array<WeakReference<View>> =
+        watched.keys.map { WeakReference(it) }.toTypedArray()
+
+    internal fun retire() {
+        dark = false
+        for ((root, listener) in watched) {
+            val tree = root.viewTreeObserver
+            if (tree.isAlive) tree.removeOnGlobalLayoutListener(listener)
+        }
+        watched.clear()
+    }
+
+    internal fun restoreRoots(roots: Array<*>) {
+        for (entry in roots) {
+            val root = (entry as? WeakReference<*>)?.get() as? View ?: continue
+            if (root.isAttachedToWindow) watch(root)
+        }
     }
 
     fun style(view: View?) {
