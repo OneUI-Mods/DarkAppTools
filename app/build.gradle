@@ -9,10 +9,10 @@ android {
     buildToolsVersion '37.0.0'
     defaultConfig {
         applicationId 'dev.ryuya.darkapps'
-        minSdk 36
+        minSdk 37
         targetSdk 37
-        versionCode 18
-        versionName '0.4.5'
+        versionCode 19
+        versionName '0.4.6'
     }
     buildFeatures {
         buildConfig true

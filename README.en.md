@@ -1,5 +1,7 @@
 # Dark App Tools
 
+Installation requires Android 17 (API 37) or later.
+
 [日本語](README.md) · English
 
 A Vector module that adds dark appearance to Sesame and povo, with separate theme choices for each app.
@@ -28,14 +30,14 @@ The module does not indiscriminately invert photos, videos, ad banners, or QR co
 
 ## Requirements
 
-Android 16–17 and Vector API 102 are required. Changes apply only to verified target versions.
+Android 17 and Vector API 102 are required. Changes apply only to verified target versions.
 
 | App | Version |
 | --- | --- |
 | Sesame | 3.0.266 |
 | povo | 1.71.0-JP |
 
-Unverified versions retain their original appearance. Physical-device validation on Android 17 covered both home screens, povo's topping list and profile, scrolling its notification list, and restoring original colors when disabled. Android 16 has not been physically validated. Web appearance also depends on Android System WebView and the page itself.
+Unverified versions retain their original appearance. Physical-device validation on Android 17 covered both home screens, povo's topping list and profile, scrolling its notification list, and restoring original colors when disabled. Web appearance also depends on Android System WebView and the page itself.
 
 ## Installation and updates
 
